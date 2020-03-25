@@ -1,0 +1,46 @@
+version: '3.7'
+
+services:
+
+  postgres:
+    container_name: postgres
+    image: postgres:11
+    environment:
+      POSTGRES_PASSWORD: pwd
+      POSTGRES_USER: user
+      POSTGRES_DB: keycloak
+    networks:
+      - demo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  keycloak:
+    image: keycloak:${TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: keycloak
+    depends_on:
+      - postgres
+    ports:
+      - 8443:8443
+      - 8099:8080
+    environment:
+      DB_USER: user
+      DB_PASSWORD: pwd
+      DB_ADDR: postgres
+      DB_PORT: 5432
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+    networks:
+      - demo
+
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  demo:
+    external:
+      name: keycloak-formation
