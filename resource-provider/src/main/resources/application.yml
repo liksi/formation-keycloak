@@ -1,0 +1,24 @@
+server:
+  port: 8090
+
+keycloak:
+  enabled: true
+  realm: formation
+  auth-server-url: http://localhost:8099/auth
+  ssl-required: none
+  resource: server
+  bearer-only: true
+  securityConstraints:
+  - authRoles:
+    - admin
+    securityCollections:
+    - name: admin endpoint
+      patterns:
+      - /messages/admin
+  - authRoles:
+    - admin
+    - user
+    securityCollections:
+    - name: user endpoint
+      patterns:
+      - /messages/user
