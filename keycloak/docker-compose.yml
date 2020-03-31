@@ -35,6 +35,32 @@ services:
     networks:
       - demo
 
+  gatekeeper:
+    container_name: gatekeeper
+    build:
+      context: gatekeeper
+      dockerfile: Dockerfile
+    ports:
+      - 8098:3000
+    command:
+      - --discovery-url
+      - http://keycloak-host:8099/auth/realms/formation
+      - --client-id
+      - gatekeeper
+      - --client-secret
+      - 2fce4ba8-5521-4654-b8fb-514c7cbfab27
+      - --listen
+      - 0.0.0.0:3000
+      - --redirection-url
+      - http://localhost:8098
+      - --upstream-url
+      - http://api-host:8090
+      - --secure-cookie=false
+    networks:
+      - demo
+    extra_hosts:
+      - "keycloak-host:192.168.32.1"
+      - "api-host:192.168.32.1"
 
 volumes:
   postgres_data:

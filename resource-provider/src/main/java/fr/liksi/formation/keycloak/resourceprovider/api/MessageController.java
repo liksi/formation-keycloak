@@ -23,4 +23,11 @@ public class MessageController {
         return result;
     }
 
+    @GetMapping("/free")
+    private Message getFree() {
+        Message result = new Message();
+        result.setMessage("Hello, this is not protected");
+        return result;
+    }
+
 }
