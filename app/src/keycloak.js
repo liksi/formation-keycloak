@@ -6,21 +6,6 @@ let initOptions = {
 
 let keycloak = Keycloak(initOptions)
 
-function scheduleRefresh () {
-  setTimeout(() => {
-    keycloak.updateToken(70).then((refreshed) => {
-      if (refreshed) {
-        console.log('Token refreshed' + refreshed)
-      } else {
-        console.log('Token not refreshed, valid for ' +
-          Math.round(keycloak.tokenParsed.exp + keycloak.timeSkew - new Date().getTime() / 1000) + ' seconds')
-      }
-    }, () => {
-      console.log('Failed to refresh token')
-    })
-  }, 60000)
-}
-
 function initKeycloak (res, rej) {
   keycloak.init({ onLoad: initOptions.onLoad }).then((auth) => {
     if (!auth) {
@@ -38,6 +23,21 @@ function initKeycloak (res, rej) {
     console.log('Authenticated Failed ' + error)
     rej(error)
   })
+}
+
+function scheduleRefresh () {
+  setTimeout(() => {
+    keycloak.updateToken(70).then((refreshed) => {
+      if (refreshed) {
+        console.log('Token refreshed' + refreshed)
+      } else {
+        console.log('Token not refreshed, valid for ' +
+          Math.round(keycloak.tokenParsed.exp + keycloak.timeSkew - new Date().getTime() / 1000) + ' seconds')
+      }
+    }, () => {
+      console.log('Failed to refresh token')
+    })
+  }, 60000)
 }
 
 function getUsername () {

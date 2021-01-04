@@ -1,5 +1,4 @@
 version: '3.7'
-
 services:
 
   postgres:
@@ -9,8 +8,6 @@ services:
       POSTGRES_PASSWORD: pwd
       POSTGRES_USER: user
       POSTGRES_DB: keycloak
-    networks:
-      - demo
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -24,7 +21,10 @@ services:
       - postgres
     ports:
       - 8443:8443
-      - 8099:8080
+      - 8090:8080
+      - 9990:9990
+    command:
+      - -Djboss.bind.address.management=0.0.0.0
     environment:
       DB_USER: user
       DB_PASSWORD: pwd
@@ -32,8 +32,7 @@ services:
       DB_PORT: 5432
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
-    networks:
-      - demo
+      keycloak_profile_feature_token_exchange: enabled
 
   gatekeeper:
     container_name: gatekeeper
@@ -56,17 +55,31 @@ services:
       - --upstream-url
       - http://api-host:8090
       - --secure-cookie=false
-    networks:
-      - demo
     extra_hosts:
       - "keycloak-host:192.168.32.1"
       - "api-host:192.168.32.1"
+
+  openldap:
+    container_name: openldap
+    image: osixia/openldap:1.3.0
+    ports:
+      - 389:389
+      - 636:636
+    environment:
+      LDAP_ORGANISATION: test
+      LDAP_DOMAIN: keycloak.org
+
+  phpldapadmin:
+    container_name: ldap-admin
+    image: osixia/phpldapadmin
+    ports:
+      - 6443:443
+    environment:
+      PHPLDAPADMIN_HTTPS: "true"
+      PHPLDAPADMIN_LDAP_HOSTS: openldap
+
 
 volumes:
   postgres_data:
     driver: local
 
-networks:
-  demo:
-    external:
-      name: keycloak-formation
