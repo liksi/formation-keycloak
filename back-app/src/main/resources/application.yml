@@ -1,0 +1,24 @@
+#authentication-mode: none
+#authentication-mode: basic
+authentication-mode: keycloak
+
+keycloak:
+  realm: formatiojn
+  resource: springboot
+  credentials:
+    secret: f05eeef6-8351-4940-9bdf-ba8a083e336d
+  auth-server-url: http://localhost:8090/auth
+  #realm: test-tristan
+  #resource: formation
+  #credentials:
+  #  secret: 48042d0e-daca-46bd-8126-de70ccbee4f9
+  #auth-server-url: https://iam.cloud-iam.com/auth
+  bearer-only: false
+  public-client: false
+#  securityConstraints:
+#  - authRoles:
+#    - GUEST
+#    securityCollections:
+#    - name: admin endpoint
+#      patterns:
+#      - /

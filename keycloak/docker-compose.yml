@@ -21,7 +21,7 @@ services:
       - postgres
     ports:
       - 8443:8443
-      - 8090:8080
+      - 8099:8080
       - 9990:9990
     command:
       - -Djboss.bind.address.management=0.0.0.0

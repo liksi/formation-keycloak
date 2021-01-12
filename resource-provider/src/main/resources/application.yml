@@ -3,10 +3,10 @@ server:
 
 keycloak:
   enabled: true
-  realm: formation
+  realm: formatiojn
   auth-server-url: http://localhost:8099/auth
   ssl-required: none
-  resource: server
+  resource: back
   bearer-only: true
   securityConstraints:
   - authRoles:

@@ -13,10 +13,7 @@ function initKeycloak (res, rej) {
     } else {
       console.log('Authenticated')
     }
-
-    localStorage.setItem('vue-token', keycloak.token)
-    localStorage.setItem('vue-refresh-token', keycloak.refreshToken)
-    scheduleRefresh()
+    //scheduleRefresh()
     res()
   },
   (error) => {
@@ -26,8 +23,8 @@ function initKeycloak (res, rej) {
 }
 
 function scheduleRefresh () {
-  setTimeout(() => {
-    keycloak.updateToken(70).then((refreshed) => {
+  setInterval(() => {
+    keycloak.updateToken(30).then((refreshed) => {
       if (refreshed) {
         console.log('Token refreshed' + refreshed)
       } else {
@@ -37,11 +34,14 @@ function scheduleRefresh () {
     }, () => {
       console.log('Failed to refresh token')
     })
-  }, 60000)
+  }, 10000)
 }
 
 function getUsername () {
-  return keycloak.idTokenParsed['preferred_username']
+  if (keycloak.idTokenParsed != null) {
+    return keycloak.idTokenParsed['preferred_username']
+  }
+  return 'Anonymous'
 }
 
 function gotoAccount () {
@@ -49,7 +49,10 @@ function gotoAccount () {
 }
 
 function getRoles () {
-  return keycloak.realmAccess.roles
+  if(keycloak.realmAccess != null) {
+    return keycloak.realmAccess.roles
+  }
+  return []
 }
 
 function getAccessToken () {
