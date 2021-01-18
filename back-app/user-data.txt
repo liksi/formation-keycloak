@@ -26,5 +26,12 @@ usermod -a -G docker ubuntu
 
 apt-get -y install \
   openjdk-8-jdk \
-  maven \
-  npm
+  maven
+
+wget -qO- https://deb.nodesource.com/setup_14.x | bash -
+
+apt-get update
+apt-get -y install  nodejs
+
+npm install -g @vue/cli
+
