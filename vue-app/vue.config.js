@@ -1,5 +1,5 @@
 module.exports = {
-    // options...
+    runtimeCompiler: true,
     devServer: {
         disableHostCheck: true
     }
