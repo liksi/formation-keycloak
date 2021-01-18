@@ -21,7 +21,7 @@ services:
       - postgres
     ports:
       - 8443:8443
-      - 8099:8080
+      - 8080:8080
       - 9990:9990
     command:
       - -Djboss.bind.address.management=0.0.0.0
@@ -33,6 +33,30 @@ services:
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
       keycloak_profile_feature_token_exchange: enabled
+
+  oauth2-proxy:
+    container_name: oauth2-proxy
+    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    environment:
+      OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
+      OAUTH2_PROXY_COOKIE_SECRET: "AZERTYUIOPQSDFGH"
+      OAUTH2_PROXY_CLIENT_ID: "proxy"
+      OAUTH2_PROXY_CLIENT_SECRET: "218e54b1-578f-4453-b6b7-c38fce8b4e3d"
+      OAUTH2_PROXY_PROVIDER: "keycloak"
+      OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: "Keycloak"
+      # The host:port used for fetching userinfo needs to be the same as the one used to login
+      # Clearly speaking OAUTH2_PROXY_LOGIN_URL and OAUTH2_PROXY_VALIDATE_URL must use the same host:port
+      OAUTH2_PROXY_LOGIN_URL: "http://keycloak:8080/auth/realms/formatiojn/protocol/openid-connect/auth"
+      OAUTH2_PROXY_REDEEM_URL: "http://keycloak:8080/auth/realms/formatiojn/protocol/openid-connect/token"
+      OAUTH2_PROXY_VALIDATE_URL: "http://keycloak:8080/auth/realms/formatiojn/protocol/openid-connect/userinfo"
+      OAUTH2_PROXY_REDIRECT_URL: "http://localhost:4180/oauth2/callback"
+      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+      OAUTH2_PROXY_UPSTREAMS: "http://172.23.0.1:8081"
+      OAUTH2_PROXY_SCOPE: "openid"
+      OAUTH2_PROXY_KEYCLOAK_GROUP: "ADMIN"
+      OAUTH2_PROXY_INSECURE_OIDC_SKIP_ISSUER_VERIFICATION: "true"
+    ports:
+      - 4180:4180
 
   gatekeeper:
     container_name: gatekeeper
