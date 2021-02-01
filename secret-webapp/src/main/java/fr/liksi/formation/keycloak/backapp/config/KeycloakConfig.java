@@ -60,7 +60,7 @@ public class KeycloakConfig extends KeycloakWebSecurityConfigurerAdapter {
         super.configure(http);
         http.authorizeRequests()
                 .antMatchers("/admin/**").hasRole("ADMIN")
-                .antMatchers("/home/**").authenticated()
+                .antMatchers("/secret/**").authenticated()
                 .and()
                 .logout()
                 .logoutUrl("/logout")

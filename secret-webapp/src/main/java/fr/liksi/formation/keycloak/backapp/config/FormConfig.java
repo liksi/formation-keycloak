@@ -14,8 +14,7 @@ public class FormConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
-                .antMatchers("/admin/**").hasRole("ADMIN")
-                .antMatchers("/home/**").authenticated()
+                .antMatchers("/secret/**").authenticated()
                 .and()
                 .formLogin()
                 .and()
