@@ -39,49 +39,25 @@ services:
     image: quay.io/oauth2-proxy/oauth2-proxy:latest
     environment:
       OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
-      OAUTH2_PROXY_COOKIE_SECRET: "AZERTYUIOPQSDFGH"
-      OAUTH2_PROXY_CLIENT_ID: "proxy"
-      OAUTH2_PROXY_CLIENT_SECRET: "218e54b1-578f-4453-b6b7-c38fce8b4e3d"
       OAUTH2_PROXY_PROVIDER: "keycloak"
       OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: "Keycloak"
+      OAUTH2_PROXY_COOKIE_SECRET: "AZERTYUIOPQSDFGH"
+      OAUTH2_PROXY_SCOPE: "openid"
+      #OAUTH2_PROXY_INSECURE_OIDC_SKIP_ISSUER_VERIFICATION: "true"
+
+      OAUTH2_PROXY_CLIENT_ID: "oauth2-proxy"
+      OAUTH2_PROXY_CLIENT_SECRET: "80e88c33-7a84-4240-b3c7-083466561792"
       # The host:port used for fetching userinfo needs to be the same as the one used to login
       # Clearly speaking OAUTH2_PROXY_LOGIN_URL and OAUTH2_PROXY_VALIDATE_URL must use the same host:port
       OAUTH2_PROXY_LOGIN_URL: "http://keycloak:8080/auth/realms/formatiojn/protocol/openid-connect/auth"
       OAUTH2_PROXY_REDEEM_URL: "http://keycloak:8080/auth/realms/formatiojn/protocol/openid-connect/token"
       OAUTH2_PROXY_VALIDATE_URL: "http://keycloak:8080/auth/realms/formatiojn/protocol/openid-connect/userinfo"
       OAUTH2_PROXY_REDIRECT_URL: "http://localhost:4180/oauth2/callback"
+      OAUTH2_PROXY_UPSTREAMS: "http://172.23.0.1:8090"
+      OAUTH2_PROXY_KEYCLOAK_GROUP: "WEBAPP"
       OAUTH2_PROXY_EMAIL_DOMAINS: "*"
-      OAUTH2_PROXY_UPSTREAMS: "http://172.23.0.1:8081"
-      OAUTH2_PROXY_SCOPE: "openid"
-      OAUTH2_PROXY_KEYCLOAK_GROUP: "ADMIN"
-      OAUTH2_PROXY_INSECURE_OIDC_SKIP_ISSUER_VERIFICATION: "true"
     ports:
       - 4180:4180
-
-  gatekeeper:
-    container_name: gatekeeper
-    build:
-      context: gatekeeper
-      dockerfile: Dockerfile
-    ports:
-      - 8098:3000
-    command:
-      - --discovery-url
-      - http://keycloak-host:8099/auth/realms/formation
-      - --client-id
-      - gatekeeper
-      - --client-secret
-      - 2fce4ba8-5521-4654-b8fb-514c7cbfab27
-      - --listen
-      - 0.0.0.0:3000
-      - --redirection-url
-      - http://localhost:8098
-      - --upstream-url
-      - http://api-host:8090
-      - --secure-cookie=false
-    extra_hosts:
-      - "keycloak-host:192.168.32.1"
-      - "api-host:192.168.32.1"
 
   openldap:
     container_name: openldap
@@ -90,8 +66,11 @@ services:
       - 389:389
       - 636:636
     environment:
+      LDAP_ADMIN_PASSWORD: admin
       LDAP_ORGANISATION: test
-      LDAP_DOMAIN: keycloak.org
+      LDAP_DOMAIN: formation
+
+# login needs to  be done with user dn: cn=admin,dc=keycloak,dc=org
 
   phpldapadmin:
     container_name: ldap-admin

@@ -32,24 +32,23 @@ public class PhoneNumberValidation implements FormAction, FormActionFactory {
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         ProviderConfigProperty configProperty = new ProviderConfigProperty();
-        configProperty.setName("mandatory");
-        configProperty.setLabel("Mandatory?");
-        configProperty.setType("boolean");
-        configProperty.setDefaultValue(true);
+        configProperty.setName("prefix");
+        configProperty.setLabel("Authorized prefix");
+        configProperty.setDefaultValue("06");
         return Arrays.asList(configProperty);
     }
 
     @Override
     public void validate(ValidationContext context) {
-        boolean mandatory = context.getAuthenticatorConfig().getConfig().get("mandatory").equalsIgnoreCase(Boolean.TRUE.toString());
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         List<FormMessage> errors = new ArrayList<>();
         context.getEvent().detail(Details.REGISTER_METHOD, "form");
         String phoneNumber = formData.getFirst(PHONE_NUMBER_FIELD);
-        if (mandatory && Validation.isBlank(phoneNumber)) {
+        String prefix = context.getAuthenticatorConfig().getConfig().get("prefix");
+        if (Validation.isBlank(phoneNumber)) {
             errors.add(new FormMessage(PHONE_NUMBER_FIELD, "missingPhoneNumber"));
-        } else if (!Validation.isBlank(phoneNumber) && !phoneNumber.startsWith("06")) {
-            errors.add(new FormMessage(PHONE_NUMBER_FIELD, "wrongPhoneNumber"));
+       } else if (!phoneNumber.startsWith(prefix)) {
+           errors.add(new FormMessage(PHONE_NUMBER_FIELD, "wrongPrefix", prefix));
         }
 
         if (errors.size() > 0) {
