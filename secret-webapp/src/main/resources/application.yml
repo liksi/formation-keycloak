@@ -1,0 +1,26 @@
+authentication-mode: none
+#authentication-mode: basic
+#authentication-mode: keycloak
+
+spring:
+  resources:
+    cache:
+      cachecontrol:
+        no-cache: on
+        max-age: 1s
+
+logging:
+  level:
+    org.keycloak: debug
+
+server:
+  port: 8090
+
+keycloak:
+  realm: formation-keycloak
+  resource: formation
+  credentials:
+    secret: 82954256-286a-4620-a8a3-a4e376a1d328
+  auth-server-url: https://lemur-1.cloud-iam.com/auth
+  bearer-only: false
+  public-client: false
