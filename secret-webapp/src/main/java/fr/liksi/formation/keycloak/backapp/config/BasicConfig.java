@@ -21,7 +21,7 @@ public class BasicConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
-                .antMatchers("/home/**").authenticated()
+                .antMatchers("/secret/**").authenticated()
                 .and()
                 .httpBasic();
         http.sessionManagement()
