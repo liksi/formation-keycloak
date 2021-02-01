@@ -6,8 +6,7 @@ spring:
   resources:
     cache:
       cachecontrol:
-        no-cache: on
-        max-age: 1s
+        no-store: on
 
 logging:
   level:
