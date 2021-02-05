@@ -7,7 +7,7 @@ let initOptions = {
 let keycloak = Keycloak(initOptions)
 
 function initKeycloak (res, rej) {
-  keycloak.init({ onLoad: initOptions.onLoad }).then((auth) => {
+  keycloak.init({ onLoad: initOptions.onLoad, checkLoginIframe: false }).then((auth) => {
     if (!auth) {
       window.location.reload()
     } else {
