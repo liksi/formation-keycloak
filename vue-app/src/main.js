@@ -10,7 +10,7 @@ import { login, getAccessToken } from './keycloak.js'
 Vue.config.productionTip = false
 Vue.use(VueResource)
 
-let serverPath = 'http://localhost:8090'
+let serverPath = 'http://localhost:8091'
 
 //login().then(() => {
   /* eslint-disable no-new */

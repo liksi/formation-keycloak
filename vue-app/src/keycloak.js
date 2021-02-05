@@ -1,7 +1,7 @@
 import Keycloak from 'keycloak-js'
 
 let initOptions = {
-  url: 'http://localhost:8099/auth', realm: 'formation', clientId: 'app', onLoad: 'login-required'
+  url: 'http://localhost:8080/auth', realm: 'formation', clientId: 'spa', onLoad: 'login-required'
 }
 
 let keycloak = Keycloak(initOptions)

@@ -28,7 +28,7 @@ export default {
   methods: {
     getGet () {
       // POST /someUrl
-      this.$http.get('http://localhost:8090/messages/' + this.kind).then(res => {
+      this.$http.get('http://localhost:8091/messages/' + this.kind).then(res => {
         console.log('succeeded to call message API', res)
         this.msg = res.body.message
       },
