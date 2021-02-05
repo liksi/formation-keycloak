@@ -1,0 +1,17 @@
+server:
+  port: 8091
+
+keycloak:
+  enabled: true
+  realm: FIXME
+  auth-server-url: FIXME
+  ssl-required: none
+  resource: FIXME
+  bearer-only: true
+  securityConstraints:
+  - authRoles:
+    - admin
+    securityCollections:
+    - name: admin endpoint
+      patterns:
+      - /messages/admin
