@@ -10,7 +10,7 @@ keycloak:
   bearer-only: true
   securityConstraints:
   - authRoles:
-    - admin
+    - ADMIN
     securityCollections:
     - name: admin endpoint
       patterns:
