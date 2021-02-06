@@ -24,3 +24,14 @@ keycloak:
   bearer-only: false
   public-client: false
   ssl-required: none
+  policy-enforcer-config:
+    enforcement-mode: ENFORCING
+    paths:
+  securityConstraints:
+  - authRoles:
+    - user
+    securityCollections:
+    - name: all
+      patterns:
+      - /*
+
