@@ -29,13 +29,23 @@ public class PhoneNumberValidation implements FormAction, FormActionFactory {
         return "Validates that the phone number starts with 06.";
     }
 
+
+    /**
+     * Use this method to define parameters that can be set when configuring the Authenticator in the flow description
+     * To use the configured value, use context.getAuthenticatorConfig().getConfig().get(XX) where XX is the name of the configuration
+     *
+     * To check that a string 'value' starts with a prefix "pre", use value.startsWith("pre"). This returns a boolean value
+     *
+     */    
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
-        ProviderConfigProperty configProperty = new ProviderConfigProperty();
-        configProperty.setName("prefix");
-        configProperty.setLabel("Authorized prefix");
-        configProperty.setDefaultValue("06");
-        return Arrays.asList(configProperty);
+//        ProviderConfigProperty configProperty = new ProviderConfigProperty();
+//        configProperty.setName();
+//        configProperty.setLabel();
+//        configProperty.setDefaultValue();
+//        configProperty.setType("String");
+//        return Arrays.asList(configProperty);
+        return null;
     }
 
     @Override
@@ -44,13 +54,9 @@ public class PhoneNumberValidation implements FormAction, FormActionFactory {
         List<FormMessage> errors = new ArrayList<>();
         context.getEvent().detail(Details.REGISTER_METHOD, "form");
         String phoneNumber = formData.getFirst(PHONE_NUMBER_FIELD);
-        String prefix = context.getAuthenticatorConfig().getConfig().get("prefix");
         if (Validation.isBlank(phoneNumber)) {
             errors.add(new FormMessage(PHONE_NUMBER_FIELD, "missingPhoneNumber"));
-       } else if (!phoneNumber.startsWith(prefix)) {
-           errors.add(new FormMessage(PHONE_NUMBER_FIELD, "wrongPrefix", prefix));
         }
-
         if (errors.size() > 0) {
             context.error(Errors.INVALID_REGISTRATION);
             context.validationError(formData, errors);
