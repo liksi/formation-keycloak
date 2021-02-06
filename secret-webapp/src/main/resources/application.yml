@@ -23,3 +23,4 @@ keycloak:
   auth-server-url: https://lemur-1.cloud-iam.com/auth
   bearer-only: false
   public-client: false
+  ssl-required: none
