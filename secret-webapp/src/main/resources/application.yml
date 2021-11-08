@@ -1,5 +1,6 @@
 authentication-mode: none
 #authentication-mode: basic
+#authentication-mode: form
 #authentication-mode: keycloak
 
 spring:
