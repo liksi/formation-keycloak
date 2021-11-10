@@ -1,4 +1,4 @@
-FROM jboss/keycloak:12.0.1
+FROM jboss/keycloak:15.0.2
 MAINTAINER Tristan Denmat "tristan.denmat@liksi.fr"
 EXPOSE 8080
 
