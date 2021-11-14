@@ -16,3 +16,6 @@ keycloak:
     - name: admin endpoint
       patterns:
       - /messages/admin
+      omitted-methods:
+      - OPTIONS
+ 
