@@ -6,6 +6,7 @@ keycloak:
   realm: FIXME
   auth-server-url: FIXME
   ssl-required: none
+  disable-trust-manager: true
   resource: FIXME
   bearer-only: true
   securityConstraints:
