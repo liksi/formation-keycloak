@@ -1,13 +1,16 @@
-FROM jboss/keycloak:15.0.2
-MAINTAINER Tristan Denmat "tristan.denmat@liksi.fr"
-EXPOSE 8080
+FROM quay.io/keycloak/keycloak:18.0.2 as builder
 
-USER root
-RUN mkdir /opt/config && \
-    chown jboss /opt/config
+ENV KC_HEALTH_ENABLED=true
+ENV KC_METRICS_ENABLED=true
+ENV KC_DB=postgres
+ENV KC_HTTP_RELATIVE_PATH=/auth
 
+COPY conf/keycloak.conf /opt/keycloak/conf/
 
+RUN /opt/keycloak/bin/kc.sh build
 
-ADD standalone-ha.xml /opt/jboss/keycloak/standalone/configuration
-ADD profile.properties /opt/jboss/keycloak/standalone/configuration
+FROM quay.io/keycloak/keycloak:18.0.2
+COPY --from=builder /opt/keycloak/ /opt/keycloak/
+WORKDIR /opt/keycloak
 
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start"]
