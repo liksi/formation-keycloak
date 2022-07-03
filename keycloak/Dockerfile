@@ -4,6 +4,7 @@ ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 ENV KC_DB=postgres
 ENV KC_HTTP_RELATIVE_PATH=/auth
+ENV ENV KC_FEATURES=declarative-user-profile
 
 COPY conf/keycloak.conf /opt/keycloak/conf/
 
