@@ -1,21 +1,9 @@
 server:
   port: 8091
 
-keycloak:
-  enabled: true
-  realm: FIXME
-  auth-server-url: FIXME
-  ssl-required: none
-  disable-trust-manager: true
-  resource: FIXME
-  bearer-only: true
-  securityConstraints:
-  - authRoles:
-    - ADMIN
-    securityCollections:
-    - name: admin endpoint
-      patterns:
-      - /messages/admin
-      omitted-methods:
-      - OPTIONS
- 
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/test

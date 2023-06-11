@@ -1,14 +1,16 @@
 package fr.liksi.formation.keycloak.resourceprovider.api;
 
-import org.keycloak.KeycloakSecurityContext;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping(value = "/messages", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -25,10 +27,10 @@ public class MessageController {
 
     @GetMapping("/admin")
     private Message getAdmin(HttpServletRequest httpServletRequest) {
-        final KeycloakSecurityContext keycloakSecurityContext = (KeycloakSecurityContext) httpServletRequest
-                .getAttribute(KeycloakSecurityContext.class.getName());
-        if (keycloakSecurityContext != null) {
-            final String username = keycloakSecurityContext.getToken().getPreferredUsername();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication instanceof JwtAuthenticationToken) {
+            JwtAuthenticationToken jwtAuthenticationToken = (JwtAuthenticationToken) authentication;
+            final String username = jwtAuthenticationToken.getToken().getClaimAsString("preferred_username");
             LOGGER.info("User {} fetches admin message", username);
         } else {
             LOGGER.warn("The request is not authenticated");
