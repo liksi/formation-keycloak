@@ -19,7 +19,7 @@ export default {
   data () {
     return {
       msg: '',
-      hasRole: getRoles().includes(this.kind.toUpperCase())
+      hasRole: getRoles().includes("ROLE_" + this.kind.toUpperCase())
     }
   },
 

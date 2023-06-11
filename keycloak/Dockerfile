@@ -1,4 +1,4 @@
-FROM quay.io/keycloak/keycloak:18.0.2 as builder
+FROM quay.io/keycloak/keycloak:21.1.1 as builder
 
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
@@ -10,7 +10,7 @@ COPY conf/keycloak.conf /opt/keycloak/conf/
 
 RUN /opt/keycloak/bin/kc.sh build
 
-FROM quay.io/keycloak/keycloak:18.0.2
+FROM quay.io/keycloak/keycloak:21.1.1
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 WORKDIR /opt/keycloak
 
