@@ -92,6 +92,14 @@ services:
       PHPLDAPADMIN_LDAP_HOSTS: openldap
 
 
+  smtp:
+    image: maildev/maildev:2.0.0-beta3
+    container_name: smtp
+    ports:
+      - 1080:1080
+      - 1025:1025
+
+
 volumes:
   postgres_data:
     driver: local
