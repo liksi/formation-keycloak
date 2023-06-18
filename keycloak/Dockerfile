@@ -4,7 +4,7 @@ ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 ENV KC_DB=postgres
 ENV KC_HTTP_RELATIVE_PATH=/auth
-ENV KC_FEATURES=declarative-user-profile
+ENV KC_FEATURES=declarative-user-profile,admin-fine-grained-authz
 
 COPY conf/keycloak.conf /opt/keycloak/conf/
 
@@ -16,7 +16,7 @@ ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 ENV KC_DB=postgres
 ENV KC_HTTP_RELATIVE_PATH=/auth
-ENV KC_FEATURES=declarative-user-profile
+ENV KC_FEATURES=declarative-user-profile,admin-fine-grained-authz
 
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 WORKDIR /opt/keycloak
