@@ -6,6 +6,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -13,6 +17,16 @@ import org.springframework.security.web.SecurityFilterChain;
 @ConditionalOnProperty(value = "authentication-mode", havingValue = "form")
 public class FormConfig {
 
+    @Bean
+    public UserDetailsService users() {
+        // The builder will ensure the passwords are encoded before saving in memory
+        User.UserBuilder users = User.withDefaultPasswordEncoder();
+        UserDetails user = users
+                .username("user")
+                .password("pwd")
+                .build();
+        return new InMemoryUserDetailsManager(user);
+    }
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth ->
