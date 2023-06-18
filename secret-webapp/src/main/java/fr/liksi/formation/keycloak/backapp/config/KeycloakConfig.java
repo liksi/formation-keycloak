@@ -32,7 +32,7 @@ public class KeycloakConfig {
                         .anyRequest().permitAll())
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
-                               .userAuthoritiesMapper(this.userAuthoritiesMapper()))
+                                .userAuthoritiesMapper(this.userAuthoritiesMapper()))
                 )
                 .logout(logout -> logout.logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegistrationRepository)));
         return http.build();
@@ -48,17 +48,19 @@ public class KeycloakConfig {
         return (authorities) -> {
             Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
             authorities.forEach(authority -> {
-                    OidcUserAuthority oidcUserAuthority = (OidcUserAuthority)authority;
+                if (authority instanceof OidcUserAuthority) {
+                    OidcUserAuthority oidcUserAuthority = (OidcUserAuthority) authority;
                     OidcIdToken idToken = oidcUserAuthority.getIdToken();
                     Map<String, Object> realmsAccessClaim = idToken.getClaimAsMap("realm_access");
                     if (realmsAccessClaim != null) {
                         List<String> realmsRoles = (List<String>) realmsAccessClaim.get("roles");
                         if (realmsRoles != null) {
-                             realmsRoles.stream()
+                            realmsRoles.stream()
                                     .map(role -> new SimpleGrantedAuthority(role))
                                     .forEach(mappedAuthorities::add);
                         }
                     }
+                }
             });
             return mappedAuthorities;
         };
