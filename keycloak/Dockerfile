@@ -7,6 +7,8 @@ ENV KC_HTTP_RELATIVE_PATH=/auth
 ENV KC_FEATURES=declarative-user-profile,admin-fine-grained-authz
 
 COPY conf/keycloak.conf /opt/keycloak/conf/
+#COPY theme/ /opt/keycloak/themes/
+#COPY provider/target/*.jar /opt/keycloak/providers/
 
 RUN /opt/keycloak/bin/kc.sh build
 
