@@ -1,37 +1,30 @@
 <#import "template.ftl" as layout>
-<@layout.registrationLayout displayInfo=social.displayInfo displayWide=(realm.password && social.providers??); section>
+<@layout.registrationLayout displayInfo=social.displayInfo; section>
     <#if section = "header">
-        ${msg("doLogIn")}
+        ${msg("answerQuestionTitle")}
     <#elseif section = "form">
         <div id="kc-form" <#if realm.password && social.providers??>class="${properties.kcContentWrapperClass!}"</#if>>
-            <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="${url.loginAction}"
-                  method="post">
-                <div id="kc-form-wrapper">
-                    <p class="libelle">
+            <form id="kc-update-profile-form" action="${url.loginAction}" method="post">
+                <div id="kc-form-wrapper"
+                     <#if realm.password && social.providers??>class="${properties.kcFormSocialAccountContentClass!} ${properties.kcFormSocialAccountClass!}"</#if>>
+
+                    <div class="${properties.kcFormGroupClass!} }">
                         ${question}
-                    </p>
-                    <div class="${properties.kcFormGroupClass!}">
-                        <div class="password-input">
-                            <input tabindex="2" placeholder="${msg("answer")}" id="answer"
-                                   class="${properties.kcInputClass!} login-input <#if message?has_content && message.type = 'error'>${properties.kcErrorOnInputClass!}</#if>" name="answer"
-                                   autocomplete="off"/>
-                        </div>
+                    </div>
+                    <div class="${properties.kcFormGroupClass!} ${messagesPerField.printIfExists('email',properties.kcFormGroupErrorClass!)}">
+                        <input placeholder="${msg("answer")}" type="text" id="answer" name="answer" value="${(answer!'')}"
+                               class="${properties.kcInputClass!} login-input <#if message?has_content && message.type = 'error'>${properties.kcErrorOnInputClass!}</#if>"/>
                     </div>
 
-                    <#if message?has_content && message.type = 'error'><p class="error-message">${message.summary}</p></#if>
+                    <#if message?has_content && message.type = 'error'><p
+                            class="error-message">${message.summary}</p></#if>
 
                     <div id="kc-form-buttons" class="${properties.kcFormGroupClass!}">
-
-                        <input tabindex="4"
-                               class="${properties.kcButtonClass!} btn-login"
-                               name="login" id="kc-login" type="submit" value="${msg("doSend")}"/>
-
-                        <input tabindex="5"
-                               class="${properties.kcButtonClass!} ${properties.kcButtonInvertedClass!} ${properties.kcButtonLargeClass!} btn-login"
-                               name="cancel" id="kc-cancel" type="submit" value="${msg("cancel")}"/>
+                        <input tabindex="4" class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}" name="login" id="kc-login" type="submit" value="${msg("doSave")}"/>
                     </div>
                 </div>
-                </#if>
+
             </form>
         </div>
+    </#if>
 </@layout.registrationLayout>

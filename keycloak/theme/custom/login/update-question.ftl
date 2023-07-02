@@ -1,10 +1,9 @@
 <#import "template.ftl" as layout>
-<@layout.registrationLayout displayInfo=social.displayInfo displayWide=(realm.password && social.providers??); section>
+<@layout.registrationLayout displayInfo=social.displayInfo; section>
     <#if section = "header">
-        ${msg("doLogIn")}
+        ${msg("updateQuestionTitle")}
     <#elseif section = "form">
         <div id="kc-form" <#if realm.password && social.providers??>class="${properties.kcContentWrapperClass!}"</#if>>
-            <p class="libelle">${msg("uqLibelle")}</p>
             <form id="kc-update-profile-form" action="${url.loginAction}" method="post">
                 <div id="kc-form-wrapper"
                      <#if realm.password && social.providers??>class="${properties.kcFormSocialAccountContentClass!} ${properties.kcFormSocialAccountClass!}"</#if>>
@@ -19,8 +18,7 @@
                             class="error-message">${message.summary}</p></#if>
 
                     <div id="kc-form-buttons" class="${properties.kcFormGroupClass!}">
-                        <input class="${properties.kcButtonClass!} btn-login"
-                               type="submit" value="${msg("doSave")}"/>
+                        <input tabindex="4" class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}" name="login" id="kc-login" type="submit" value="${msg("doSave")}"/>
                     </div>
                 </div>
 
