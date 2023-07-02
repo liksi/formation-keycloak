@@ -27,7 +27,7 @@ public class OauthResourceConfiguration {
 					  .authorizeHttpRequests(auth -> auth
 							  .requestMatchers(HttpMethod.OPTIONS).permitAll()
 							  .requestMatchers("/messages/admin").hasRole("ADMIN")
-							  .requestMatchers("/messages/user").hasAnyRole("ADMIN", "USER")
+							  .requestMatchers("/messages/user").denyAll()
 							  .anyRequest().permitAll()
 					  )
 					  .oauth2ResourceServer(oauth2 -> oauth2
