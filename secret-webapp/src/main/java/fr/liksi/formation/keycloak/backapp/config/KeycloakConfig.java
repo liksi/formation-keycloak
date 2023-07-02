@@ -40,7 +40,7 @@ public class KeycloakConfig {
 
     private OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegistrationRepository) {
         OidcClientInitiatedLogoutSuccessHandler successHandler = new OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository);
-        successHandler.setPostLogoutRedirectUri("/");
+        successHandler.setPostLogoutRedirectUri("{baseUrl}");
         return successHandler;
     }
 
