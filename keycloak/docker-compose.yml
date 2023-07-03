@@ -39,13 +39,14 @@ services:
 
   oauth2-proxy:
     container_name: oauth2-proxy
-    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.4.0
     environment:
       # General configuration ==> DO NOT CHANGE
       OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
-      OAUTH2_PROXY_PROVIDER: "keycloak"
+      OAUTH2_PROXY_PROVIDER: "keycloak-oidc"
       OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: "Keycloak"
-      OAUTH2_PROXY_COOKIE_SECRET: "AZERTYUIOPQSDFGH"
+      #  cookie_secret must be 16, 24, or 32 bytes to create an AES cipher
+      OAUTH2_PROXY_COOKIE_SECRET: "SECRET_KEY123456"
       OAUTH2_PROXY_SCOPE: "openid"
       OAUTH2_PROXY_SSL_INSECURE_SKIP_VERIFY: "true"
       OAUTH2_PROXY_COOKIE_SECURE: "false"
@@ -53,19 +54,16 @@ services:
 
       # Environment specific configuration ==> CHANGE IT
       OAUTH2_PROXY_CLIENT_ID: "oauth2-proxy"
-      OAUTH2_PROXY_CLIENT_SECRET: "80e88c33-7a84-4240-b3c7-083466561792"
+      OAUTH2_PROXY_CLIENT_SECRET: "PVIrotLG3RhMifMKu9MCaHmpMj81x5JD"
       # The host:port used for fetching userinfo needs to be the same as the one used to login
       # Clearly speaking OAUTH2_PROXY_LOGIN_URL and OAUTH2_PROXY_VALIDATE_URL must use the same host:port
-      OAUTH2_PROXY_LOGIN_URL: "http://keycloak:8080/auth/realms/formatiojn/protocol/openid-connect/auth"
-      OAUTH2_PROXY_REDEEM_URL: "http://keycloak:8080/auth/realms/formatiojn/protocol/openid-connect/token"
-      OAUTH2_PROXY_VALIDATE_URL: "http://keycloak:8080/auth/realms/formatiojn/protocol/openid-connect/userinfo"
-      OAUTH2_PROXY_REDIRECT_URL: "http://localhost:4180/oauth2/callback"
-      OAUTH2_PROXY_UPSTREAMS: "http://172.23.0.1:8090"
-
+      OAUTH2_PROXY_OIDC_ISSUER_URL: "http://KEYCLOAK_URL/auth/realms/test"
+      OAUTH2_PROXY_REDIRECT_URL: "http://PROXY_URL/oauth2/callback"
+      OAUTH2_PROXY_UPSTREAMS: "http://SERVICE_URL"
 
       # Authorization configuration
-      OAUTH2_PROXY_ALLOWED_GROUPS: "WEBAPP"
-      OAUTH2_PROXY_EMAIL_DOMAINS: "secret.com"
+      #OAUTH2_PROXY_ALLOWED_ROLES: "MANAGER"
+      #OAUTH2_PROXY_EMAIL_DOMAINS: "keycloak.org"
     ports:
       - 4180:4180
 
