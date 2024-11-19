@@ -8,7 +8,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.utils.StringUtil;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 public class QuestionAuthenticator extends AbstractFormAuthenticator {
     @Override
