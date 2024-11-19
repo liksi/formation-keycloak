@@ -9,9 +9,9 @@
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
-        <java.version>8</java.version>
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <keycloak.version>21.1.1</keycloak.version>
+        <keycloak.version>26.0.5</keycloak.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
     </properties>
     <dependencies>

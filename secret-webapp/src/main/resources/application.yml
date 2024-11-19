@@ -16,11 +16,11 @@ spring:
       client:
         registration:
           keycloak:
-            client-id: formation
-            client-secret: 82954256-286a-4620-a8a3-a4e376a1d328
+            client-id: secret-webapp
+            client-secret: hC0VxkSVOkxzAewulJ2arhfKTYNOWYOQ
             authorization-grant-type: authorization_code
             scope: openid
         provider:
           keycloak:
-            issuer-uri: https://lemur-1.cloud-iam.com/auth/realms/formation-keycloak
+            issuer-uri: https://lemur-5.cloud-iam.com/auth/realms/keycloak-training
 

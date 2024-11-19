@@ -1,3 +1,4 @@
 keycloak/provider/target
 keycloak/provider/*.iml
 hardway/
+.idea
