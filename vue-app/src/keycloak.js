@@ -1,7 +1,7 @@
 import Keycloak from 'keycloak-js'
 
 let initOptions = {
-  url: 'http://localhost:8080/auth', realm: 'training', clientId: 'vue', onLoad: 'login-required'
+  url: 'http://localhost:8080', realm: 'test', clientId: 'vue', onLoad: 'login-required'
 }
 
 let keycloak = new Keycloak(initOptions)
