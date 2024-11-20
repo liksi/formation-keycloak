@@ -32,7 +32,7 @@
 import { logout as keycloakLogout, gotoAccount } from '../keycloak'
 
 export default {
-  name: 'Header',
+  name: 'HeaderComponent',
 
   methods: {
     logout () {

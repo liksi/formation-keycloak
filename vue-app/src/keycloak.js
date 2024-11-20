@@ -1,10 +1,10 @@
 import Keycloak from 'keycloak-js'
 
 let initOptions = {
-  url: 'http://localhost:8080', realm: 'test', clientId: 'vue', onLoad: 'login-required'
+  url: 'http://localhost:8080/auth', realm: 'training', clientId: 'vue', onLoad: 'login-required'
 }
 
-let keycloak = Keycloak(initOptions)
+let keycloak = new Keycloak(initOptions)
 
 function initKeycloak (res, rej) {
   keycloak.init({ onLoad: initOptions.onLoad, checkLoginIframe: false }).then((auth) => {

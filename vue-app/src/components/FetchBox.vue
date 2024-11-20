@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import { getRoles } from '../keycloak'
+import { getRoles } from '@/keycloak'
 
 export default {
   name: 'FetchBox',

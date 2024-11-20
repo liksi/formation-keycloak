@@ -12,7 +12,7 @@ Vue.use(VueResource)
 
 let serverPath = 'http://localhost:8091'
 
-//login().then(() => {
+login().then(() => {
   /* eslint-disable no-new */
   new Vue({
     el: '#app',
@@ -26,8 +26,8 @@ let serverPath = 'http://localhost:8091'
       root: serverPath
     }
   })
-//}, () => {})
+}, () => {})
 
-// Vue.http.interceptors.push(function (request) {
-//   request.headers.set('Authorization', 'Bearer ' + getAccessToken())
-// })
+ Vue.http.interceptors.push(function (request) {
+   request.headers.set('Authorization', 'Bearer ' + getAccessToken())
+ })

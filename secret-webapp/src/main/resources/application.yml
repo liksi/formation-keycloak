@@ -1,7 +1,7 @@
-authentication-mode: none
+#authentication-mode: none
 #authentication-mode: basic
 #authentication-mode: form
-#authentication-mode: keycloak
+authentication-mode: keycloak
 
 server:
   port: 8090
@@ -17,10 +17,10 @@ spring:
         registration:
           keycloak:
             client-id: secret-webapp
-            client-secret: hC0VxkSVOkxzAewulJ2arhfKTYNOWYOQ
+            client-secret: 5SxcKHdoOEONXdN8riWK4cHYF1fGPMCX
             authorization-grant-type: authorization_code
             scope: openid
         provider:
           keycloak:
-            issuer-uri: https://lemur-5.cloud-iam.com/auth/realms/keycloak-training
+            issuer-uri: http://localhost:8080/auth/realms/training
 
