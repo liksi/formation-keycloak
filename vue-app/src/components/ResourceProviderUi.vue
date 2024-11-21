@@ -1,20 +1,24 @@
 <template>
   <div>
+  <HeaderComponent/>
+  <div>
     <h1> Hello {{ name }} !</h1>
     <div class="hello">
       <FetchBox kind="admin" />
       <FetchBox kind="user" />
     </div>
   </div>
+  </div>
 </template>
 
 <script>
 import FetchBox from './FetchBox'
 import { getUsername } from '../keycloak'
+import HeaderComponent from "@/components/HeaderComponent.vue";
 
 export default {
   name: 'ResourceProviderUi',
-  components: { FetchBox },
+  components: { FetchBox, HeaderComponent },
   data () {
     return {
       name: getUsername()
