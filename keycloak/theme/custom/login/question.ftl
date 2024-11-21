@@ -1,30 +1,20 @@
 <#import "template.ftl" as layout>
-<@layout.registrationLayout displayInfo=social.displayInfo; section>
+<#import "field.ftl" as field>
+<#import "buttons.ftl" as buttons>
+<@layout.registrationLayout displayMessage=!messagesPerField.existsError('question','answer') displayInfo=true; section>
+    <!-- template: login.ftl -->
     <#if section = "header">
         ${msg("answerQuestionTitle")}
     <#elseif section = "form">
-        <div id="kc-form" <#if realm.password && social.providers??>class="${properties.kcContentWrapperClass!}"</#if>>
-            <form id="kc-update-profile-form" action="${url.loginAction}" method="post">
-                <div id="kc-form-wrapper"
-                     <#if realm.password && social.providers??>class="${properties.kcFormSocialAccountContentClass!} ${properties.kcFormSocialAccountClass!}"</#if>>
+        <div id="kc-form">
+            <div id="kc-form-wrapper">
+                <form id="kc-form-login" class="${properties.kcFormClass!}" onsubmit="login.disabled = true; return true;" action="${url.loginAction}" method="post" novalidate="novalidate">
+                    ${question}
+                    <@field.input name="answer" label=msg("answer") autocomplete="answer" />
 
-                    <div class="${properties.kcFormGroupClass!} }">
-                        ${question}
-                    </div>
-                    <div class="${properties.kcFormGroupClass!} ${messagesPerField.printIfExists('email',properties.kcFormGroupErrorClass!)}">
-                        <input placeholder="${msg("answer")}" type="text" id="answer" name="answer" value="${(answer!'')}"
-                               class="${properties.kcInputClass!} login-input <#if message?has_content && message.type = 'error'>${properties.kcErrorOnInputClass!}</#if>"/>
-                    </div>
-
-                    <#if message?has_content && message.type = 'error'><p
-                            class="error-message">${message.summary}</p></#if>
-
-                    <div id="kc-form-buttons" class="${properties.kcFormGroupClass!}">
-                        <input tabindex="4" class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}" name="login" id="kc-login" type="submit" value="${msg("doSave")}"/>
-                    </div>
-                </div>
-
-            </form>
+                    <@buttons.loginButton />
+                </form>
+            </div>
         </div>
     </#if>
 </@layout.registrationLayout>
