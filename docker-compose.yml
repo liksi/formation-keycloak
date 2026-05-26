@@ -61,9 +61,14 @@ services:
       OAUTH2_PROXY_COOKIE_SECURE: "false"
       OAUTH2_PROXY_CLIENT_ID: "oauth2-proxy"
       OAUTH2_PROXY_CLIENT_SECRET: "PVIrotLG3RhMifMKu9MCaHmpMj81x5JD"
+      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
       OAUTH2_PROXY_OIDC_ISSUER_URL: "http://KEYCLOAK_URL/realms/test"
       OAUTH2_PROXY_REDIRECT_URL: "http://PROXY_URL/oauth2/callback"
       OAUTH2_PROXY_UPSTREAMS: "http://SERVICE_URL"
+
+      # Authorization configuration (uncomment for PW6 §4)
+      #OAUTH2_PROXY_ALLOWED_ROLES: "MANAGER"
+      #OAUTH2_PROXY_EMAIL_DOMAINS: "keycloak.org"
     ports:
       - "4180:4180"
 
@@ -93,6 +98,12 @@ services:
     ports:
       - "1080:1080"
       - "1025:1025"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:1080 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   api:
     build: ./api
