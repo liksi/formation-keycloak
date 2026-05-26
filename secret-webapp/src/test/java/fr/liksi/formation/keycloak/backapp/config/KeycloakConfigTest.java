@@ -3,7 +3,7 @@ package fr.liksi.formation.keycloak.backapp.config;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.TestPropertySource;
 
@@ -21,7 +21,7 @@ class KeycloakConfigTest {
     @Autowired(required = false)
     private KeycloakConfig keycloakConfig;
 
-    @MockBean
+    @MockitoBean
     private ClientRegistrationRepository clientRegistrationRepository;
 
     @Test
