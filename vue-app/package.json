@@ -10,15 +10,15 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "core-js": "^3.32.4",
+    "core-js": "^3.49.0",
     "keycloak-js": "^26.2.4",
-    "vue": "^3.5.14",
-    "vue-router": "^4.5.1"
+    "vue": "^3.5.34",
+    "vue-router": "^5.0.7"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.4",
+    "@vitejs/plugin-vue": "^6.0.7",
     "jsdom": "^29.1.1",
-    "vite": "^6.3.5",
-    "vitest": "^2.1.9"
+    "vite": "^8.0.14",
+    "vitest": "^4.1.7"
   }
 }

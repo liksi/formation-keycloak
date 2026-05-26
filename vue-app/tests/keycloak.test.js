@@ -10,7 +10,7 @@ const mockKeycloakInstance = {
   logout: vi.fn(),
 }
 
-const KeycloakMock = vi.fn(() => mockKeycloakInstance)
+const KeycloakMock = vi.fn(function() { return mockKeycloakInstance })
 vi.mock('keycloak-js', () => ({ default: KeycloakMock }))
 
 describe('keycloak.js', () => {
