@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KEYCLOAK_BASE="http://localhost:8080/auth"
+KEYCLOAK_BASE="http://localhost:8080"
 KEYCLOAK_REALM="test"
 KEYCLOAK_CLIENT="admin-cli"
 KEYCLOAK_USER="admin"

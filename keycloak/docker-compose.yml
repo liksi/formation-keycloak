@@ -33,7 +33,6 @@ services:
       KEYCLOAK_ADMIN: admin
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
-      KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_PROXY: none
 
 
@@ -57,7 +56,7 @@ services:
       OAUTH2_PROXY_CLIENT_SECRET: "PVIrotLG3RhMifMKu9MCaHmpMj81x5JD"
       # The host:port used for fetching userinfo needs to be the same as the one used to login
       # Clearly speaking OAUTH2_PROXY_LOGIN_URL and OAUTH2_PROXY_VALIDATE_URL must use the same host:port
-      OAUTH2_PROXY_OIDC_ISSUER_URL: "http://KEYCLOAK_URL/auth/realms/test"
+      OAUTH2_PROXY_OIDC_ISSUER_URL: "http://KEYCLOAK_URL/realms/test"
       OAUTH2_PROXY_REDIRECT_URL: "http://PROXY_URL/oauth2/callback"
       OAUTH2_PROXY_UPSTREAMS: "http://SERVICE_URL"
 
