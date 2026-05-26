@@ -1,4 +1,3 @@
-version: '3.7'
 services:
 
   postgres:
@@ -10,6 +9,8 @@ services:
       POSTGRES_DB: keycloak
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d keycloak"]
       interval: 5s
@@ -19,16 +20,16 @@ services:
   keycloak:
     image: keycloak:${TAG:-latest}
     build:
-      context: .
+      context: ./keycloak
       dockerfile: Dockerfile
     container_name: keycloak
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - 8443:8443
-      - 8080:8080
-      - 9990:9990
+      - "8443:8443"
+      - "8080:8080"
+      - "9990:9990"
     environment:
       KC_DB_URL_HOST: postgres
       KC_DB_URL_PORT: 5432
@@ -47,69 +48,83 @@ services:
       retries: 15
       start_period: 30s
 
-
   oauth2-proxy:
     container_name: oauth2-proxy
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2
     environment:
-      # General configuration ==> DO NOT CHANGE
       OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
       OAUTH2_PROXY_PROVIDER: "keycloak-oidc"
       OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: "Keycloak"
-      #  cookie_secret must be 16, 24, or 32 bytes to create an AES cipher
       OAUTH2_PROXY_COOKIE_SECRET: "SECRET_KEY123456"
       OAUTH2_PROXY_SCOPE: "openid"
       OAUTH2_PROXY_SSL_INSECURE_SKIP_VERIFY: "true"
       OAUTH2_PROXY_COOKIE_SECURE: "false"
-
-
-      # Environment specific configuration ==> CHANGE IT
       OAUTH2_PROXY_CLIENT_ID: "oauth2-proxy"
       OAUTH2_PROXY_CLIENT_SECRET: "PVIrotLG3RhMifMKu9MCaHmpMj81x5JD"
-      # The host:port used for fetching userinfo needs to be the same as the one used to login
-      # Clearly speaking OAUTH2_PROXY_LOGIN_URL and OAUTH2_PROXY_VALIDATE_URL must use the same host:port
       OAUTH2_PROXY_OIDC_ISSUER_URL: "http://KEYCLOAK_URL/realms/test"
       OAUTH2_PROXY_REDIRECT_URL: "http://PROXY_URL/oauth2/callback"
       OAUTH2_PROXY_UPSTREAMS: "http://SERVICE_URL"
-
-      # Authorization configuration
-      #OAUTH2_PROXY_ALLOWED_ROLES: "MANAGER"
-      #OAUTH2_PROXY_EMAIL_DOMAINS: "keycloak.org"
     ports:
-      - 4180:4180
+      - "4180:4180"
 
   openldap:
     container_name: openldap
     image: osixia/openldap:1.5.0
     ports:
-      - 389:389
-      - 636:636
+      - "389:389"
+      - "636:636"
     environment:
       LDAP_ADMIN_PASSWORD: admin
       LDAP_ORGANISATION: test
       LDAP_DOMAIN: formation
 
-# login needs to  be done with user dn: cn=admin,dc=keycloak,dc=org
-
   phpldapadmin:
     container_name: ldap-admin
     image: osixia/phpldapadmin
     ports:
-      - 6443:443
+      - "6443:443"
     environment:
       PHPLDAPADMIN_HTTPS: "true"
       PHPLDAPADMIN_LDAP_HOSTS: openldap
-
 
   smtp:
     image: maildev/maildev:2.1.0
     container_name: smtp
     ports:
-      - 1080:1080
-      - 1025:1025
+      - "1080:1080"
+      - "1025:1025"
 
+  api:
+    build: ./api
+    container_name: api
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    ports:
+      - "8091:8091"
+    extra_hosts:
+      - "localhost:host-gateway"
+
+  secret-webapp:
+    build: ./secret-webapp
+    container_name: secret-webapp
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    extra_hosts:
+      - "localhost:host-gateway"
+    environment:
+      AUTHENTICATION_MODE: none
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/test
+
+  vue-app:
+    build: ./vue-app
+    container_name: vue-app
+    ports:
+      - "8070:8070"
 
 volumes:
   postgres_data:
     driver: local
-
