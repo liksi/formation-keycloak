@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import FetchBox from './FetchBox'
+import FetchBox from './FetchBox.vue'
 import { getUsername } from '../keycloak'
 import HeaderComponent from "@/components/HeaderComponent.vue";
 

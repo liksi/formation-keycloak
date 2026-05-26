@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 v-bind:class="{ forbidden : !hasRole}">{{ kind }}</h1>
+    <h1 :class="{ forbidden : !hasRole}">{{ kind }}</h1>
         <a
           @click="getGet"
         >
@@ -27,23 +27,21 @@ export default {
 
   methods: {
     getGet () {
-      // POST /someUrl
-      this.$http.get('http://localhost:8091/messages/' + this.kind).then(res => {
-        console.log('succeeded to call message API', res)
-        this.msg = res.body.message
-      },
-      error => {
-        console.log('Failed to call message API', error)
-        this.msg = error.body.status + ' ' + error.body.error
-      })
+      fetch('http://localhost:8091/messages/' + this.kind)
+        .then(res => res.json())
+        .then(data => {
+          console.log('succeeded to call message API', data)
+          this.msg = data.message
+        })
+        .catch(error => {
+          console.log('Failed to call message API', error)
+          this.msg = error.status + ' ' + error.statusText
+        })
     }
-
   }
-
 }
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 div {
   min-width: 300px;
