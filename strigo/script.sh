@@ -21,7 +21,7 @@ apt-get -y install docker-ce docker-ce-cli containerd.io
 usermod -a -G docker ubuntu
 
 runuser -l ubuntu -c 'curl -s "https://get.sdkman.io" | bash'
-runuser -l ubuntu -c 'source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk version && sdk install java 21.0.6-tem && sdk install maven 3.9.2'
+runuser -l ubuntu -c 'source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk version && sdk install java 25.0.3-tem && sdk install maven 3.9.2'
 
 
 wget -qO- https://deb.nodesource.com/setup_14.x | bash -

@@ -25,7 +25,7 @@ chmod +x /usr/local/bin/docker-compose
 usermod -a -G docker ubuntu
 
 apt-get -y install \
-  openjdk-21-jdk \
+  openjdk-25-jdk \
   maven
 
 wget -qO- https://deb.nodesource.com/setup_14.x | bash -
