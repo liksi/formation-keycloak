@@ -36,7 +36,7 @@ Services auxiliaires :
 ## Prérequis
 
 - **Docker** et Docker Compose (v2+)
-- **Java 21** (Temurin recommandé)
+- **Java 25** (Temurin recommandé)
 - **Maven 3.9+**
 - **Node.js 22+** et npm
 
@@ -47,11 +47,12 @@ Services auxiliaires :
 | Keycloak | 26.6.2 |
 | keycloak-js | 26.2.4 |
 | PostgreSQL | 16 |
-| Java | 21 |
-| Spring Boot | 3.4.13 |
+| Spring Boot | 4.0.6 |
+| Java | 25 |
 | Vue | 3.5.x |
-| Vite | 6.x |
-| Vue Router | 4.x |
+| Vite | 8.x |
+| Vue Router | 5.x |
+| vitest | 4.x |
 | oauth2-proxy | 7.15.2 |
 | OpenLDAP | 1.5.0 |
 | MailDev | 2.1.0 |
