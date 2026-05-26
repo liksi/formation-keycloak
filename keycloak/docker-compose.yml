@@ -28,6 +28,7 @@ services:
     ports:
       - 8443:8443
       - 8080:8080
+      - 9000:9000
       - 9990:9990
     environment:
       KC_DB_URL_HOST: postgres
@@ -41,7 +42,7 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_PROXY: none
     healthcheck:
-      test: ["CMD-SHELL", "curl -f -s http://localhost:8080/realms/master || exit 1"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8080 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 15

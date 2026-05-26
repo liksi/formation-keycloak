@@ -29,6 +29,7 @@ services:
     ports:
       - "8443:8443"
       - "8080:8080"
+      - "9000:9000"
       - "9990:9990"
     environment:
       KC_DB_URL_HOST: postgres
@@ -42,7 +43,7 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_PROXY: none
     healthcheck:
-      test: ["CMD-SHELL", "curl -f -s http://localhost:8080/realms/master || exit 1"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8080 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 15
@@ -108,33 +109,29 @@ services:
   api:
     build: ./api
     container_name: api
+    network_mode: host
     depends_on:
       keycloak:
         condition: service_healthy
-    ports:
-      - "8091:8091"
-    extra_hosts:
-      - "localhost:host-gateway"
 
   secret-webapp:
     build: ./secret-webapp
     container_name: secret-webapp
+    network_mode: host
     depends_on:
       keycloak:
         condition: service_healthy
-    ports:
-      - "8090:8090"
-    extra_hosts:
-      - "localhost:host-gateway"
     environment:
       AUTHENTICATION_MODE: none
-      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/test
+      # To switch to Keycloak OAuth2 mode, change to:
+      #   AUTHENTICATION_MODE: keycloak
+      #   SPRING_PROFILES_ACTIVE: keycloak
+      #   SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/training
 
   vue-app:
     build: ./vue-app
     container_name: vue-app
-    ports:
-      - "8070:8070"
+    network_mode: host
 
 volumes:
   postgres_data:
