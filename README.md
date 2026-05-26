@@ -40,6 +40,22 @@ Services auxiliaires :
 - **Maven 3.9+**
 - **Node.js 22+** et npm
 
+## Versions
+
+| Composant | Version |
+|-----------|---------|
+| Keycloak | 26.6.2 |
+| keycloak-js | 26.2.4 |
+| PostgreSQL | 16 |
+| Java | 21 |
+| Spring Boot | 3.4.13 |
+| Vue | 3.5.x |
+| Vite | 6.x |
+| Vue Router | 4.x |
+| oauth2-proxy | 7.15.2 |
+| OpenLDAP | 1.5.0 |
+| MailDev | 2.1.0 |
+
 ## Démarrage rapide
 
 ### 1. Infrastructure Docker
