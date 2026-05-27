@@ -9,7 +9,8 @@ server:
 spring:
   config:
     import: optional:classpath:application-${authentication-mode}.yml
-  resources:
-    cache:
-      cachecontrol:
-        no-store: on
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-store: true

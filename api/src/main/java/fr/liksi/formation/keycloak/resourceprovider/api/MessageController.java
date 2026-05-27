@@ -3,9 +3,8 @@ package fr.liksi.formation.keycloak.resourceprovider.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,30 +18,22 @@ public class MessageController {
 
     @GetMapping("/user")
     public Message getUser() {
-        Message result = new Message();
-        result.setMessage("Hello User");
-        return result;
+        return new Message("Hello User");
     }
 
     @GetMapping("/admin")
-    public Message getAdmin() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication instanceof JwtAuthenticationToken jwtAuthenticationToken) {
-            final String username = jwtAuthenticationToken.getToken().getClaimAsString("preferred_username");
-            LOGGER.info("User {} fetches admin message", username);
+    public Message getAdmin(@AuthenticationPrincipal Jwt jwt) {
+        if (jwt != null) {
+            LOGGER.info("User {} fetches admin message", jwt.getClaimAsString("preferred_username"));
         } else {
             LOGGER.warn("The request is not authenticated");
         }
-        Message result = new Message();
-        result.setMessage("Hello Admin");
-        return result;
+        return new Message("Hello Admin");
     }
 
     @GetMapping("/public")
     public Message getFree() {
-        Message result = new Message();
-        result.setMessage("Hello, this is not protected");
-        return result;
+        return new Message("Hello, this is not protected");
     }
 
 }
