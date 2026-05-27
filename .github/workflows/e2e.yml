@@ -69,10 +69,13 @@ jobs:
       - name: Pull static Docker images
         run: docker compose pull postgres openldap phpldapadmin smtp oauth2-proxy
 
-      - name: Pre-warm Maven dependency cache
-        run: |
-          cd api && ./mvnw -B -q dependency:go-offline
-          cd secret-webapp && ./mvnw -B -q dependency:go-offline
+      - name: Pre-warm Maven cache (api)
+        run: ./mvnw -B -q dependency:go-offline
+        working-directory: api
+
+      - name: Pre-warm Maven cache (secret-webapp)
+        run: ./mvnw -B -q dependency:go-offline
+        working-directory: secret-webapp
 
       - name: Cache vue-app node_modules
         id: cache-node-modules
