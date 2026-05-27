@@ -13,6 +13,9 @@ dependencies = [
     "ldap3>=2.9.1",
 ]
 
+[tool.setuptools]
+packages = []
+
 [tool.pytest.ini_options]
 timeout = 120
 markers = [
