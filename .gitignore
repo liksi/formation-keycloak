@@ -5,3 +5,4 @@ hardway/
 vue-app/dist/
 api/target
 secret-webapp/target
+.playwright-mcp/

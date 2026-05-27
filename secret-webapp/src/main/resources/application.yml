@@ -7,8 +7,9 @@ server:
   port: 8090
 
 spring:
+  config:
+    import: optional:classpath:application-${authentication-mode}.yml
   resources:
     cache:
       cachecontrol:
         no-store: on
-
