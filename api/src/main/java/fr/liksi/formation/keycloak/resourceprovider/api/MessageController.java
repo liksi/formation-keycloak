@@ -1,6 +1,5 @@
 package fr.liksi.formation.keycloak.resourceprovider.api;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -19,17 +18,16 @@ public class MessageController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageController.class);
 
     @GetMapping("/user")
-    private Message getUser() {
+    public Message getUser() {
         Message result = new Message();
         result.setMessage("Hello User");
         return result;
     }
 
     @GetMapping("/admin")
-    private Message getAdmin(HttpServletRequest httpServletRequest) {
+    public Message getAdmin() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication instanceof JwtAuthenticationToken) {
-            JwtAuthenticationToken jwtAuthenticationToken = (JwtAuthenticationToken) authentication;
+        if (authentication instanceof JwtAuthenticationToken jwtAuthenticationToken) {
             final String username = jwtAuthenticationToken.getToken().getClaimAsString("preferred_username");
             LOGGER.info("User {} fetches admin message", username);
         } else {
@@ -41,7 +39,7 @@ public class MessageController {
     }
 
     @GetMapping("/public")
-    private Message getFree() {
+    public Message getFree() {
         Message result = new Message();
         result.setMessage("Hello, this is not protected");
         return result;

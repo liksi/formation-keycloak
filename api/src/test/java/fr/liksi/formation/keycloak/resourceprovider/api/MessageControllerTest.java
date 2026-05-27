@@ -1,14 +1,13 @@
 package fr.liksi.formation.keycloak.resourceprovider.api;
 
-import fr.liksi.formation.keycloak.resourceprovider.config.CorsGlobalConfiguration;
 import fr.liksi.formation.keycloak.resourceprovider.config.OauthResourceConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -17,7 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MessageController.class)
-@Import({OauthResourceConfiguration.class, CorsGlobalConfiguration.class})
+@Import(OauthResourceConfiguration.class)
 class MessageControllerTest {
 
     @Autowired
