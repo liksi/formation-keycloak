@@ -22,6 +22,7 @@ markers = [
     "pw1: PW1 auth mode coverage",
     "pw2: PW2 OIDC coverage",
     "pw3: PW3 Keycloak configuration coverage",
+    "pw4: PW4 Keycloak installation coverage",
     "pw5: PW5 API and SPA coverage",
     "pw6: PW6 enterprise coverage",
     "pw7: PW7 customization coverage",
