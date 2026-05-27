@@ -34,7 +34,7 @@ uv run pytest -m pw7
 # One file
 uv run pytest test_pw1_auth_modes.py -q
 
-# Keep /tmp workspaces after the run (useful for debugging)
+# Keep temporary workspaces after the run (useful for debugging)
 uv run pytest --keep-workspaces
 ```
 
@@ -55,7 +55,7 @@ tests-e2e/
 │   ├── maildev.py       # Poll MailDev API until a message arrives
 │   ├── ldap.py          # ldap3-based LDAP operations (create users/groups, sync)
 │   ├── stack.py         # DockerStack (docker compose wrapper) and ProcessManager
-│   └── workspace.py     # Disposable /tmp workspace creation and solution patching
+│   └── workspace.py     # Disposable temporary workspace creation and solution patching
 ├── solutions/           # Reference .patch files (documentation only — not used at runtime)
 ├── artifacts/           # Screenshots and HTML snapshots saved on test failure
 └── test_pw*.py          # Test files, one per practical work
@@ -65,14 +65,14 @@ tests-e2e/
 
 ## Core design decisions
 
-### 1. Disposable `/tmp` workspaces
+### 1. Disposable temporary workspaces
 
 The practical work exercises are represented by `FIXME` markers in the source code.
 Tests that require student changes cannot modify the working tree (it would corrupt
 the training material). Instead, every test that needs code changes:
 
-1. Copies the entire project into a fresh `/tmp/formation-keycloak-<name>-XXXXX/repo/` directory
-   via `WorkspaceManager.create()`.
+1. Copies the entire project into a fresh `tempfile.TemporaryDirectory` via
+   `WorkspaceManager.create()`, which returns the `repo/` path inside it.
 2. Applies one or more named solutions via `WorkspaceManager.apply_solution()`.
 3. Starts the app(s) from that disposable copy.
 4. After the test, the workspace is deleted (unless `--keep-workspaces` is passed).
@@ -222,8 +222,9 @@ take several minutes each. The rest run in seconds once the `infra` fixture is u
 a previous run is always cleaned. You don't need to `docker compose down -v` manually
 before re-running.
 
-**Debugging a workspace**: run with `--keep-workspaces` and look in `/tmp/formation-keycloak-*/`.
-Process logs are written to `<tmp_path>/process-logs/<name>.log`.
+**Debugging a workspace**: run with `--keep-workspaces`. The temporary directory path is
+printed by `WorkspaceManager` and follows the OS default for temp files (e.g. `/tmp` on
+Linux). Process logs are written to the pytest `tmp_path / process-logs/<name>.log`.
 
 **Running a single test with verbose output**:
 ```bash

@@ -47,7 +47,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--keep-workspaces",
         action="store_true",
         default=False,
-        help="Keep disposable /tmp workspaces after tests complete.",
+        help="Keep disposable temporary workspaces after tests complete.",
     )
 
 

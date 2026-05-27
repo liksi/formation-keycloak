@@ -12,11 +12,11 @@ class WorkspaceManager:
         self.source_root = source_root
         self.tests_root = tests_root
         self.keep_workspaces = keep_workspaces
-        self._created: list[Path] = []
+        self._created: list[tempfile.TemporaryDirectory] = []
 
     def create(self, name: str) -> Path:
-        root = Path(tempfile.mkdtemp(prefix=f"formation-keycloak-{name}-"))
-        destination = root / "repo"
+        tmp = tempfile.TemporaryDirectory(prefix=f"formation-keycloak-{name}-")
+        destination = Path(tmp.name) / "repo"
         shutil.copytree(
             self.source_root,
             destination,
@@ -32,7 +32,7 @@ class WorkspaceManager:
                 "artifacts",
             ),
         )
-        self._created.append(root)
+        self._created.append(tmp)
         return destination
 
     def apply_solution(self, workspace: Path, solution_name: str) -> None:
@@ -346,5 +346,5 @@ class WorkspaceManager:
     def cleanup(self) -> None:
         if self.keep_workspaces:
             return
-        for root in self._created:
-            shutil.rmtree(root, ignore_errors=True)
+        for tmp in self._created:
+            tmp.cleanup()
