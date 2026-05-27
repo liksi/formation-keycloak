@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import contextlib
+import http.server
+import socketserver
 import subprocess
+import threading
 import time
 
 import pytest
@@ -42,7 +46,13 @@ def _pw7_client_uuid(base_url: str, headers: dict, realm: str, client_id: str) -
 
 
 def _pw7_ensure_client(
-    base_url: str, headers: dict, realm: str, client_id: str, *, direct_access: bool = False
+    base_url: str,
+    headers: dict,
+    realm: str,
+    client_id: str,
+    *,
+    direct_access: bool = False,
+    redirect_uris: list[str] | None = None,
 ) -> None:
     payload = {
         "clientId": client_id,
@@ -50,7 +60,7 @@ def _pw7_ensure_client(
         "publicClient": True,
         "directAccessGrantsEnabled": direct_access,
         "standardFlowEnabled": True,
-        "redirectUris": ["http://localhost:9999/*"],
+        "redirectUris": redirect_uris or ["http://localhost:9999/*"],
     }
     existing_id = _pw7_client_uuid(base_url, headers, realm, client_id)
     if existing_id is None:
@@ -96,6 +106,7 @@ def _pw7_ensure_user(
         "email": f"{username}@pw7.test",
         "firstName": username,
         "lastName": "Test",
+        "requiredActions": [],
     }
     if age:
         payload["attributes"] = {"age": [age]}
@@ -173,6 +184,28 @@ def _pw7_add_required_action(
     ).raise_for_status()
 
 
+def _pw7_clear_required_actions(
+    base_url: str, headers: dict, realm: str, username: str
+) -> None:
+    user_id = _pw7_user_id(base_url, headers, realm, username)
+    if not user_id:
+        return
+    resp = requests.get(
+        f"{base_url}/admin/realms/{realm}/users/{user_id}", headers=headers, timeout=30
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    if not payload.get("requiredActions"):
+        return
+    payload["requiredActions"] = []
+    requests.put(
+        f"{base_url}/admin/realms/{realm}/users/{user_id}",
+        headers=headers,
+        json=payload,
+        timeout=30,
+    ).raise_for_status()
+
+
 def _pw7_register_required_action(
     base_url: str, headers: dict, realm: str, action_id: str
 ) -> None:
@@ -218,36 +251,98 @@ def _pw7_setup_question_auth_flow(
             json={"newName": flow_alias},
             timeout=30,
         ).raise_for_status()
-
+    executions_resp = requests.get(
+        f"{base_url}/admin/realms/{realm}/authentication/flows/{flow_alias}/executions",
+        headers=headers,
+        timeout=30,
+    )
+    executions_resp.raise_for_status()
+    forms_alias = f"{flow_alias} forms"
+    question_subflow_alias = f"{flow_alias} question challenge"
+    existing_exec = next(
+        (
+            e
+            for e in executions_resp.json()
+            if e.get("providerId") == "secret-question-authenticator"
+        ),
+        None,
+    )
+    if existing_exec is None:
         requests.post(
-            f"{base_url}/admin/realms/{realm}/authentication/flows/{flow_alias}/executions/execution",
+            f"{base_url}/admin/realms/{realm}/authentication/flows/{forms_alias}/executions/flow",
+            headers=headers,
+            json={
+                "alias": question_subflow_alias,
+                "type": "basic-flow",
+                "provider": "basic-flow",
+                "description": "Secret question challenge",
+            },
+            timeout=30,
+        ).raise_for_status()
+        requests.post(
+            f"{base_url}/admin/realms/{realm}/authentication/flows/{question_subflow_alias}/executions/execution",
             headers=headers,
             json={"provider": "secret-question-authenticator"},
             timeout=30,
         ).raise_for_status()
 
-        executions_resp = requests.get(
+    executions_resp = requests.get(
+        f"{base_url}/admin/realms/{realm}/authentication/flows/{flow_alias}/executions",
+        headers=headers,
+        timeout=30,
+    )
+    executions_resp.raise_for_status()
+    question_subflow_exec = next(
+        (e for e in executions_resp.json() if e.get("displayName") == question_subflow_alias),
+        None,
+    )
+    if question_subflow_exec:
+        question_subflow_exec["requirement"] = "REQUIRED"
+        requests.put(
             f"{base_url}/admin/realms/{realm}/authentication/flows/{flow_alias}/executions",
             headers=headers,
+            json=question_subflow_exec,
             timeout=30,
-        )
-        executions_resp.raise_for_status()
-        new_exec = next(
-            (
-                e
-                for e in executions_resp.json()
-                if e.get("providerId") == "secret-question-authenticator"
-            ),
-            None,
-        )
-        if new_exec:
-            new_exec["requirement"] = "REQUIRED"
-            requests.put(
-                f"{base_url}/admin/realms/{realm}/authentication/flows/{flow_alias}/executions",
+        ).raise_for_status()
+        while question_subflow_exec.get("index", 99) > 1:
+            requests.post(
+                f"{base_url}/admin/realms/{realm}/authentication/executions/{question_subflow_exec['id']}/raise-priority",
                 headers=headers,
-                json=new_exec,
                 timeout=30,
             ).raise_for_status()
+            executions_resp = requests.get(
+                f"{base_url}/admin/realms/{realm}/authentication/flows/{flow_alias}/executions",
+                headers=headers,
+                timeout=30,
+            )
+            executions_resp.raise_for_status()
+            question_subflow_exec = next(
+                (e for e in executions_resp.json() if e.get("displayName") == question_subflow_alias),
+                question_subflow_exec,
+            )
+
+    question_execs = requests.get(
+        f"{base_url}/admin/realms/{realm}/authentication/flows/{question_subflow_alias}/executions",
+        headers=headers,
+        timeout=30,
+    )
+    question_execs.raise_for_status()
+    existing_exec = next(
+        (
+            e
+            for e in question_execs.json()
+            if e.get("providerId") == "secret-question-authenticator"
+        ),
+        None,
+    )
+    if existing_exec:
+        existing_exec["requirement"] = "REQUIRED"
+        requests.put(
+            f"{base_url}/admin/realms/{realm}/authentication/flows/{question_subflow_alias}/executions",
+            headers=headers,
+            json=existing_exec,
+            timeout=30,
+        ).raise_for_status()
 
     realm_resp = requests.get(
         f"{base_url}/admin/realms/{realm}", headers=headers, timeout=30
@@ -270,6 +365,63 @@ def _pw7_reset_browser_flow(base_url: str, headers: dict, realm: str) -> None:
     requests.put(
         f"{base_url}/admin/realms/{realm}", headers=headers, json=payload, timeout=30
     ).raise_for_status()
+
+
+def _pw7_fill_login_form(page, username: str, password: str) -> None:
+    page.locator('input[name="username"], input#username').first.fill(username)
+    page.locator('input[name="password"], input#password').first.fill(password)
+    page.locator('input[type="submit"], button[type="submit"], input[name="login"]').first.click()
+
+
+def _pw7_enable_unmanaged_attributes(base_url: str, headers: dict, realm: str) -> None:
+    config_resp = requests.get(
+        f"{base_url}/admin/realms/{realm}/users/profile",
+        headers=headers,
+        timeout=30,
+    )
+    if config_resp.status_code == 404:
+        return
+    config_resp.raise_for_status()
+    config = config_resp.json() or {}
+    config["unmanagedAttributePolicy"] = "ENABLED"
+    requests.put(
+        f"{base_url}/admin/realms/{realm}/users/profile",
+        headers=headers,
+        json=config,
+        timeout=30,
+    ).raise_for_status()
+
+
+class _PW7CallbackHandler(http.server.BaseHTTPRequestHandler):
+    callback_path: str | None = None
+
+    def do_GET(self):
+        type(self).callback_path = self.path
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(b"<html><body>PW7 callback received</body></html>")
+
+    def log_message(self, format, *args):
+        return
+
+
+class _PW7ReusableTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+
+@contextlib.contextmanager
+def _pw7_callback_server():
+    _PW7CallbackHandler.callback_path = None
+    with _PW7ReusableTCPServer(("127.0.0.1", 0), _PW7CallbackHandler) as server:
+        server.timeout = 0.5
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield server.server_address[1]
+        finally:
+            server.shutdown()
+            thread.join(timeout=2)
 
 
 # --- Fixtures ---
@@ -314,8 +466,20 @@ def pw7_keycloak(workspace_manager):
 
     base_url = "http://localhost:18080"
     for _ in range(60):
+        container_state = subprocess.run(
+            ["docker", "inspect", "-f", "{{.State.Status}}", container],
+            capture_output=True,
+            text=True,
+        )
+        if container_state.returncode == 0 and container_state.stdout.strip() == "exited":
+            logs = subprocess.run(
+                ["docker", "logs", container], capture_output=True, text=True
+            )
+            subprocess.run(["docker", "rm", "-f", container], capture_output=True)
+            pytest.fail(f"PW7 Keycloak container exited during startup:\n{logs.stderr or logs.stdout}")
         try:
-            if requests.get(f"{base_url}/health/ready", timeout=3).status_code == 200:
+            master = requests.get(f"{base_url}/realms/master/.well-known/openid-configuration", timeout=3)
+            if master.status_code == 200:
                 break
         except Exception:
             pass
@@ -331,9 +495,15 @@ def pw7_keycloak(workspace_manager):
     realm_resp.raise_for_status()
     realm_payload = realm_resp.json()
     realm_payload["sslRequired"] = "NONE"
+    realm_payload["loginTheme"] = "custom"
     requests.put(
         f"{base_url}/admin/realms/master", headers=headers, json=realm_payload, timeout=30
     ).raise_for_status()
+    _pw7_enable_unmanaged_attributes(base_url, headers, "master")
+    _pw7_set_user_attribute(
+        base_url, headers, "master", "admin", "question", "Admin bootstrap question"
+    )
+    _pw7_set_user_attribute(base_url, headers, "master", "admin", "answer", "admin")
 
     yield {"base_url": base_url, "workspace": workspace}
 
@@ -423,6 +593,7 @@ def test_pw7_age_mapper_adult_claim(pw7_keycloak):
     headers = _pw7_admin_headers(base_url)
     realm = "master"
 
+    _pw7_reset_browser_flow(base_url, headers, realm)
     _pw7_ensure_client(base_url, headers, realm, "pw7-test-client", direct_access=True)
     client_uuid = _pw7_client_uuid(base_url, headers, realm, "pw7-test-client")
 
@@ -453,6 +624,12 @@ def test_pw7_age_mapper_adult_claim(pw7_keycloak):
     # AgeMapper.MIN_AGE = 21; use age=25 for adult, age=15 for minor
     _pw7_ensure_user(base_url, headers, realm, "adult_user", "AdultPass1!", age="25")
     _pw7_ensure_user(base_url, headers, realm, "minor_user", "MinorPass1!", age="15")
+    _pw7_clear_required_actions(base_url, headers, realm, "adult_user")
+    _pw7_clear_required_actions(base_url, headers, realm, "minor_user")
+    _pw7_set_user_attribute(base_url, headers, realm, "adult_user", "question", "Adult question")
+    _pw7_set_user_attribute(base_url, headers, realm, "adult_user", "answer", "adult")
+    _pw7_set_user_attribute(base_url, headers, realm, "minor_user", "question", "Minor question")
+    _pw7_set_user_attribute(base_url, headers, realm, "minor_user", "answer", "minor")
 
     adult_resp = requests.post(
         f"{base_url}/realms/{realm}/protocol/openid-connect/token",
@@ -461,6 +638,7 @@ def test_pw7_age_mapper_adult_claim(pw7_keycloak):
             "username": "adult_user",
             "password": "AdultPass1!",
             "grant_type": "password",
+            "scope": "openid",
         },
         timeout=30,
     )
@@ -472,13 +650,14 @@ def test_pw7_age_mapper_adult_claim(pw7_keycloak):
             "username": "minor_user",
             "password": "MinorPass1!",
             "grant_type": "password",
+            "scope": "openid",
         },
         timeout=30,
     )
     minor_resp.raise_for_status()
 
-    adult_claims = decode_jwt(adult_resp.json()["access_token"])
-    minor_claims = decode_jwt(minor_resp.json()["access_token"])
+    adult_claims = decode_jwt(adult_resp.json()["id_token"])
+    minor_claims = decode_jwt(minor_resp.json()["id_token"])
 
     assert adult_claims.get("is_adult") is True, (
         f"User with age=25 should have is_adult=true, got: {adult_claims.get('is_adult')!r}"
@@ -495,50 +674,57 @@ def test_pw7_required_action_question_form(pw7_keycloak, browser, capture_page_a
     headers = _pw7_admin_headers(base_url)
     realm = "master"
 
-    _pw7_ensure_client(base_url, headers, realm, "pw7-test-client", direct_access=True)
-    _pw7_register_required_action(base_url, headers, realm, "update_question")
-    _pw7_ensure_user(base_url, headers, realm, "question_user", "QuestionPass1!")
-    _pw7_add_required_action(base_url, headers, realm, "question_user", "update_question")
-
-    auth_url = (
-        f"{base_url}/realms/{realm}/protocol/openid-connect/auth"
-        "?client_id=pw7-test-client&response_type=code&scope=openid"
-        "&redirect_uri=http://localhost:9999/"
-    )
-
-    context = browser.new_context(ignore_https_errors=True)
-    page = context.new_page()
-    page.set_default_timeout(20_000)
-    capture_page_artifacts(page, "pw7-required-action")
-    try:
-        page.goto(auth_url, wait_until="domcontentloaded")
-        page.wait_for_load_state("networkidle")
-        page.get_by_role("textbox", name="Username or email").fill("question_user")
-        page.get_by_role("textbox", name="Password").fill("QuestionPass1!")
-        page.get_by_role("button", name="Sign In").click()
-        page.wait_for_load_state("networkidle")
-
-        assert "localhost:9999" not in page.url, (
-            "Required action should intercept the flow before redirect to client"
+    _pw7_reset_browser_flow(base_url, headers, realm)
+    with _pw7_callback_server() as callback_port:
+        _pw7_ensure_client(
+            base_url,
+            headers,
+            realm,
+            "pw7-test-client",
+            direct_access=True,
+            redirect_uris=[f"http://localhost:{callback_port}/*"],
         )
-        page_content = page.content().lower()
-        assert "question" in page_content or "answer" in page_content, (
-            "KC should show the Update Question form for users with update_question required action"
+        _pw7_register_required_action(base_url, headers, realm, "update_question")
+        _pw7_ensure_user(base_url, headers, realm, "question_user", "QuestionPass1!")
+        _pw7_clear_required_actions(base_url, headers, realm, "question_user")
+        _pw7_add_required_action(base_url, headers, realm, "question_user", "update_question")
+        auth_url = (
+            f"{base_url}/realms/{realm}/protocol/openid-connect/auth"
+            "?client_id=pw7-test-client&response_type=code&scope=openid"
+            f"&redirect_uri=http://localhost:{callback_port}/"
         )
-
-        page.fill('[name="question"]', "What is my favorite color?")
-        page.fill('[name="answer"]', "blue")
+        context = browser.new_context(ignore_https_errors=True)
+        page = context.new_page()
+        page.set_default_timeout(20_000)
+        capture_page_artifacts(page, "pw7-required-action")
         try:
-            with page.expect_navigation(wait_until="commit", timeout=8_000):
-                page.locator('input[type="submit"], button[type="submit"]').first.click()
-        except Exception:
-            pass
+            page.goto(auth_url, wait_until="domcontentloaded")
+            page.wait_for_load_state("networkidle")
+            _pw7_fill_login_form(page, "question_user", "QuestionPass1!")
+            page.wait_for_load_state("networkidle")
 
-        assert "localhost:9999" in page.url or "code=" in page.url, (
-            "After completing the Update Question required action, KC should redirect to the client"
-        )
-    finally:
-        context.close()
+            assert "localhost:9999" not in page.url, (
+                "Required action should intercept the flow before redirect to client"
+            )
+            page_content = page.content().lower()
+            assert "question" in page_content or "answer" in page_content, (
+                "KC should show the Update Question form for users with update_question required action"
+            )
+
+            page.fill('[name="question"]', "What is my favorite color?")
+            page.fill('[name="answer"]', "blue")
+            with contextlib.suppress(Exception):
+                with page.expect_navigation(wait_until="load", timeout=10_000):
+                    page.locator('input[type="submit"], button[type="submit"]').first.click()
+
+            page.wait_for_url(f"http://localhost:{callback_port}/**", timeout=10_000)
+            assert f"localhost:{callback_port}" in page.url and "code=" in page.url, (
+                "After completing the Update Question required action, KC should redirect to the client"
+            )
+            assert _PW7CallbackHandler.callback_path is not None
+            assert "code=" in _PW7CallbackHandler.callback_path
+        finally:
+            context.close()
 
 
 @pytest.mark.pw7
@@ -548,48 +734,53 @@ def test_pw7_question_authenticator_flow(pw7_keycloak, browser, capture_page_art
     headers = _pw7_admin_headers(base_url)
     realm = "master"
 
-    _pw7_ensure_client(base_url, headers, realm, "pw7-test-client", direct_access=True)
-    _pw7_setup_question_auth_flow(base_url, headers, realm, "browser-question")
-    _pw7_ensure_user(base_url, headers, realm, "auth_question_user", "AuthQPass1!")
-    _pw7_set_user_attribute(
-        base_url, headers, realm, "auth_question_user", "question", "What is 2+2?"
-    )
-    _pw7_set_user_attribute(base_url, headers, realm, "auth_question_user", "answer", "4")
-
-    auth_url = (
-        f"{base_url}/realms/{realm}/protocol/openid-connect/auth"
-        "?client_id=pw7-test-client&response_type=code&scope=openid"
-        "&redirect_uri=http://localhost:9999/"
-    )
-
-    context1 = browser.new_context(ignore_https_errors=True)
-    page1 = context1.new_page()
-    page1.set_default_timeout(20_000)
-    capture_page_artifacts(page1, "pw7-question-correct")
-    try:
-        page1.goto(auth_url, wait_until="domcontentloaded")
-        page1.wait_for_load_state("networkidle")
-        page1.get_by_role("textbox", name="Username or email").fill("auth_question_user")
-        page1.get_by_role("textbox", name="Password").fill("AuthQPass1!")
-        page1.get_by_role("button", name="Sign In").click()
-        page1.wait_for_load_state("networkidle")
-
-        assert any(
-            word in page1.content().lower() for word in ["question", "answer"]
-        ), "Question authenticator should present the question form after credentials"
-
-        page1.fill('[name="answer"]', "4")
-        try:
-            with page1.expect_navigation(wait_until="commit", timeout=8_000):
-                page1.locator('input[type="submit"], button[type="submit"]').first.click()
-        except Exception:
-            pass
-
-        assert "localhost:9999" in page1.url, (
-            "Correct answer should complete the authentication and redirect to the client"
+    _pw7_reset_browser_flow(base_url, headers, realm)
+    with _pw7_callback_server() as callback_port:
+        _pw7_ensure_client(
+            base_url,
+            headers,
+            realm,
+            "pw7-test-client",
+            direct_access=True,
+            redirect_uris=[f"http://localhost:{callback_port}/*"],
         )
-    finally:
-        context1.close()
+        _pw7_setup_question_auth_flow(base_url, headers, realm, "browser-question")
+        _pw7_ensure_user(base_url, headers, realm, "auth_question_user", "AuthQPass1!")
+        _pw7_clear_required_actions(base_url, headers, realm, "auth_question_user")
+        _pw7_set_user_attribute(
+            base_url, headers, realm, "auth_question_user", "question", "What is 2+2?"
+        )
+        _pw7_set_user_attribute(base_url, headers, realm, "auth_question_user", "answer", "4")
+        auth_url = (
+            f"{base_url}/realms/{realm}/protocol/openid-connect/auth"
+            "?client_id=pw7-test-client&response_type=code&scope=openid"
+            f"&redirect_uri=http://localhost:{callback_port}/"
+        )
+        context1 = browser.new_context(ignore_https_errors=True)
+        page1 = context1.new_page()
+        page1.set_default_timeout(20_000)
+        capture_page_artifacts(page1, "pw7-question-correct")
+        try:
+            page1.goto(auth_url, wait_until="domcontentloaded")
+            page1.wait_for_load_state("networkidle")
+            _pw7_fill_login_form(page1, "auth_question_user", "AuthQPass1!")
+            page1.wait_for_load_state("networkidle")
+
+            assert any(
+                word in page1.content().lower() for word in ["question", "answer"]
+            ), "Question authenticator should present the question form after credentials"
+
+            page1.fill('[name="answer"]', "4")
+            with contextlib.suppress(Exception):
+                with page1.expect_navigation(wait_until="load", timeout=10_000):
+                    page1.locator('input[type="submit"], button[type="submit"]').first.click()
+
+            page1.wait_for_url(f"http://localhost:{callback_port}/**", timeout=10_000)
+            assert f"localhost:{callback_port}" in page1.url and "code=" in page1.url, (
+                "Correct answer should complete the authentication and redirect to the client"
+            )
+        finally:
+            context1.close()
 
     context2 = browser.new_context(ignore_https_errors=True)
     page2 = context2.new_page()
@@ -598,9 +789,7 @@ def test_pw7_question_authenticator_flow(pw7_keycloak, browser, capture_page_art
     try:
         page2.goto(auth_url, wait_until="domcontentloaded")
         page2.wait_for_load_state("networkidle")
-        page2.get_by_role("textbox", name="Username or email").fill("auth_question_user")
-        page2.get_by_role("textbox", name="Password").fill("AuthQPass1!")
-        page2.get_by_role("button", name="Sign In").click()
+        _pw7_fill_login_form(page2, "auth_question_user", "AuthQPass1!")
         page2.wait_for_load_state("networkidle")
 
         page2.fill('[name="answer"]', "wrong_answer")

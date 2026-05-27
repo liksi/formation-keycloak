@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import contextlib
+import http.server
+import socketserver
+import threading
+
 import pytest
 import requests
 
@@ -421,41 +426,68 @@ def test_pw3_consent_screen_appears_on_first_login(browser, capture_page_artifac
         last_name="User",
     )
 
-    auth_url = (
+    class _ConsentCallbackHandler(http.server.BaseHTTPRequestHandler):
+        callback_path: str | None = None
+
+        def do_GET(self):
+            type(self).callback_path = self.path
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"<html><body>Consent callback received</body></html>")
+
+        def log_message(self, format, *args):
+            return
+
+    with socketserver.TCPServer(("127.0.0.1", 9999), _ConsentCallbackHandler) as server:
+        server.timeout = 0.5
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+
+        auth_url = (
         f"{KEYCLOAK_URL}/realms/{REALM_NAME}/protocol/openid-connect/auth"
         "?client_id=consent-test-client&response_type=code&scope=openid"
         "&redirect_uri=http://localhost:9999/"
-    )
-
-    context = browser.new_context(ignore_https_errors=True)
-    page = context.new_page()
-    page.set_default_timeout(20_000)
-    capture_page_artifacts(page, "consent-screen")
-    try:
-        page.goto(auth_url, wait_until="domcontentloaded")
-        page.wait_for_load_state("networkidle")
-        page.get_by_role("textbox", name="Username or email").fill("consent_user")
-        page.get_by_role("textbox", name="Password").fill("ConsentPass1!")
-        page.get_by_role("button", name="Sign In").click()
-        page.wait_for_load_state("networkidle")
-
-        page_content = page.content().lower()
-        assert any(
-            word in page_content for word in ["consent", "grant", "allow", "access"]
-        ), "Consent screen should appear after login for consentRequired client"
-
-        try:
-            with page.expect_navigation(wait_until="commit", timeout=5_000):
-                page.get_by_role("button", name="Allow").click()
-        except Exception:
-            pass
-
-        assert "localhost:9999" in page.url, (
-            "After granting consent, KC should redirect to the configured redirect_uri"
         )
-        assert "code=" in page.url, "Authorization code should be present in redirect URL"
-    finally:
-        context.close()
+
+        context = browser.new_context(ignore_https_errors=True)
+        page = context.new_page()
+        page.set_default_timeout(20_000)
+        capture_page_artifacts(page, "consent-screen")
+        try:
+            page.goto(auth_url, wait_until="domcontentloaded")
+            page.wait_for_load_state("networkidle")
+            page.get_by_role("textbox", name="Username or email").fill("consent_user")
+            page.get_by_role("textbox", name="Password").fill("ConsentPass1!")
+            page.get_by_role("button", name="Sign In").click()
+            page.wait_for_load_state("networkidle")
+
+            page_content = page.content().lower()
+            assert any(
+                word in page_content for word in ["consent", "grant", "allow", "access"]
+            ), "Consent screen should appear after login for consentRequired client"
+
+            consent_button = (
+                page.get_by_role("button", name="Allow")
+                .or_(page.get_by_role("button", name="Continue"))
+                .or_(page.get_by_role("button", name="Yes"))
+                .or_(page.locator("button[type='submit']").first)
+            )
+            with contextlib.suppress(Exception):
+                with page.expect_navigation(wait_until="load", timeout=10_000):
+                    consent_button.click()
+
+            page.wait_for_url("http://localhost:9999/**", timeout=10_000)
+            assert "localhost:9999" in page.url, (
+                "After granting consent, KC should redirect to the configured redirect_uri"
+            )
+            assert "code=" in page.url, "Authorization code should be present in redirect URL"
+            assert _ConsentCallbackHandler.callback_path is not None
+            assert "code=" in _ConsentCallbackHandler.callback_path
+        finally:
+            context.close()
+            server.shutdown()
+            thread.join(timeout=2)
 
 
 @pytest.mark.pw3

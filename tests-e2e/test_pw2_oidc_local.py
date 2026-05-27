@@ -109,11 +109,12 @@ def test_pw2_sso_logout_clears_session(keycloak_issuer):
     sessions.raise_for_status()
     assert len(sessions.json()) > 0, "Expected active KC session after login"
 
-    requests.delete(
-        f"{KEYCLOAK_URL}/admin/realms/{REALM_NAME}/users/{uid}/sessions",
+    logout_resp = requests.post(
+        f"{KEYCLOAK_URL}/admin/realms/{REALM_NAME}/users/{uid}/logout",
         headers=headers,
         timeout=30,
-    ).raise_for_status()
+    )
+    logout_resp.raise_for_status()
 
     refresh_resp = requests.post(
         f"{keycloak_issuer}/protocol/openid-connect/token",
