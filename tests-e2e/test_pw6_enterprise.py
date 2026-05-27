@@ -5,13 +5,15 @@ import time
 import pytest
 import requests
 
-from conftest import (KEYCLOAK_URL, OAUTH2_PROXY_CLIENT, REALM_NAME,
-                      TEST_PASSWORD, TEST_USER, _admin_headers, _client_secret,
-                      _ensure_client, _ensure_client_protocol_mapper)
+from conftest import (CURL_CLIENT, KEYCLOAK_URL, OAUTH2_PROXY_CLIENT,
+                      REALM_NAME, TEST_PASSWORD, TEST_USER, _admin_headers,
+                      _client_secret, _ensure_client,
+                      _ensure_client_protocol_mapper)
 from helpers.keycloak_ui import add_ldap_federation, sync_ldap_users
 from helpers.keycloak_ui import \
     test_ldap_connection as run_ldap_connection_check
 from helpers.ldap import LDAPManager
+from helpers.oidc import get_token
 from helpers.stack import DockerStack
 
 pytestmark = pytest.mark.usefixtures("seed_training_realm")
@@ -145,3 +147,105 @@ def test_pw6_oauth2_proxy_uses_lab_compose(
         context.close()
     finally:
         workspace_stack.rm("oauth2-proxy")
+
+
+@pytest.mark.pw6
+def test_pw6_login_event_appears_in_events_list(keycloak_issuer):
+    headers = _admin_headers()
+    requests.put(
+        f"{KEYCLOAK_URL}/admin/realms/{REALM_NAME}/events/config",
+        headers=headers,
+        json={
+            "eventsEnabled": True,
+            "adminEventsEnabled": True,
+            "adminEventsDetailsEnabled": True,
+            "enabledEventTypes": ["LOGIN", "LOGIN_ERROR", "LOGOUT"],
+        },
+        timeout=30,
+    ).raise_for_status()
+
+    get_token(keycloak_issuer, CURL_CLIENT, TEST_USER, TEST_PASSWORD)
+    time.sleep(1)
+
+    events_resp = requests.get(
+        f"{KEYCLOAK_URL}/admin/realms/{REALM_NAME}/events",
+        headers=headers,
+        params={"type": "LOGIN"},
+        timeout=30,
+    )
+    events_resp.raise_for_status()
+    events = events_resp.json()
+
+    assert any(e["type"] == "LOGIN" for e in events), (
+        "Expected at least one LOGIN event to be recorded after authenticating"
+    )
+
+
+@pytest.mark.pw6
+def test_pw6_ldap_user_can_login(keycloak_issuer):
+    """LDAP-synced users can authenticate against Keycloak using their LDAP credentials."""
+    headers = _admin_headers()
+
+    ldap = LDAPManager(
+        "ldap://localhost:389", "cn=admin,dc=formation", "admin", "dc=formation"
+    )
+    ldap.create_group("users")
+    ldap.create_user("ldap-user", "User", uid="ldap-user", password="pwd")
+
+    comp_resp = requests.get(
+        f"{KEYCLOAK_URL}/admin/realms/{REALM_NAME}/components"
+        "?type=org.keycloak.storage.UserStorageProvider",
+        headers=headers,
+        timeout=30,
+    )
+    comp_resp.raise_for_status()
+    existing_fed = next(
+        (c for c in comp_resp.json() if c.get("providerId") == "ldap"), None
+    )
+    if existing_fed is None:
+        requests.post(
+            f"{KEYCLOAK_URL}/admin/realms/{REALM_NAME}/components",
+            headers=headers,
+            json={
+                "name": "ldap",
+                "providerId": "ldap",
+                "providerType": "org.keycloak.storage.UserStorageProvider",
+                "config": {
+                    "vendor": ["other"],
+                    "connectionUrl": ["ldap://openldap"],
+                    "bindDn": ["cn=admin,dc=formation"],
+                    "bindCredential": ["admin"],
+                    "usersDn": ["dc=formation"],
+                    "usernameLDAPAttribute": ["uid"],
+                    "rdnLDAPAttribute": ["uid"],
+                    "uuidLDAPAttribute": ["entryUUID"],
+                    "userObjectClasses": ["inetOrgPerson"],
+                    "authType": ["simple"],
+                    "editMode": ["READ_ONLY"],
+                    "syncRegistrations": ["false"],
+                    "importEnabled": ["true"],
+                    "pagination": ["true"],
+                    "enabled": ["true"],
+                },
+            },
+            timeout=30,
+        ).raise_for_status()
+        comp_resp = requests.get(
+            f"{KEYCLOAK_URL}/admin/realms/{REALM_NAME}/components"
+            "?type=org.keycloak.storage.UserStorageProvider",
+            headers=headers,
+            timeout=30,
+        )
+        comp_resp.raise_for_status()
+        existing_fed = next(c for c in comp_resp.json() if c.get("providerId") == "ldap")
+
+    fed_id = existing_fed["id"]
+    requests.post(
+        f"{KEYCLOAK_URL}/admin/realms/{REALM_NAME}/user-storage/{fed_id}/sync"
+        "?action=triggerFullSync",
+        headers=headers,
+        timeout=60,
+    ).raise_for_status()
+
+    token = get_token(keycloak_issuer, CURL_CLIENT, "ldap-user", "pwd")
+    assert token.get("access_token"), "LDAP user should receive a valid access token"

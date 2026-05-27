@@ -66,3 +66,70 @@ def test_pw1_form_mode_uses_session_cookie(workspace_factory, process_manager):
     assert login.status_code in (302, 303)
     assert authenticated.status_code == 200
     assert "Keycloak rocks" in authenticated.text
+
+
+@pytest.mark.pw1
+def test_pw1_form_mode_cookie_httponly(workspace_factory, process_manager):
+    workspace = workspace_factory("pw1-form-httponly", "pw1_form")
+    process_manager.start_secret_webapp(workspace)
+
+    session = requests.Session()
+    initial = session.get(
+        "http://localhost:8090/secret/index.html",
+        timeout=20,
+        allow_redirects=False,
+    )
+    login = session.post(
+        "http://localhost:8090/login",
+        data={"username": "user", "password": "pwd"},
+        timeout=20,
+        allow_redirects=False,
+    )
+
+    combined_cookies = " ".join(filter(None, [
+        initial.headers.get("Set-Cookie", ""),
+        login.headers.get("Set-Cookie", ""),
+    ]))
+    assert "JSESSIONID" in combined_cookies
+    assert "HttpOnly" in combined_cookies
+
+
+@pytest.mark.pw1
+def test_pw1_form_mode_session_invalidated_after_restart(workspace_factory, process_manager):
+    workspace = workspace_factory("pw1-form-restart", "pw1_form")
+    process_manager.start_secret_webapp(workspace)
+
+    session = requests.Session()
+    session.get(
+        "http://localhost:8090/secret/index.html",
+        timeout=20,
+        allow_redirects=False,
+    )
+    session.post(
+        "http://localhost:8090/login",
+        data={"username": "user", "password": "pwd"},
+        timeout=20,
+    )
+    cookie_value = session.cookies.get("JSESSIONID")
+    assert cookie_value, "Expected a session cookie after login"
+
+    before_restart = requests.get(
+        "http://localhost:8090/secret/index.html",
+        cookies={"JSESSIONID": cookie_value},
+        timeout=20,
+        allow_redirects=False,
+    )
+    assert before_restart.status_code == 200, "Cookie should be valid before restart"
+
+    process_manager.stop_all()
+    process_manager.start_secret_webapp(workspace)
+
+    after_restart = requests.get(
+        "http://localhost:8090/secret/index.html",
+        cookies={"JSESSIONID": cookie_value},
+        timeout=20,
+        allow_redirects=False,
+    )
+    assert after_restart.status_code in (302, 303), (
+        "Stale session cookie should trigger redirect to login after server restart"
+    )
