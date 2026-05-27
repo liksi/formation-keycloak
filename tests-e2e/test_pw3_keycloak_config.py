@@ -426,6 +426,9 @@ def test_pw3_consent_screen_appears_on_first_login(browser, capture_page_artifac
         last_name="User",
     )
 
+    # KC redirects the browser to redirect_uri?code=... after consent.
+    # Playwright would throw "connection refused" if nothing is listening on that port.
+    # We spin up a minimal HTTP server on 9999 to receive the redirect and capture the code.
     class _ConsentCallbackHandler(http.server.BaseHTTPRequestHandler):
         callback_path: str | None = None
 
@@ -493,6 +496,8 @@ def test_pw3_consent_screen_appears_on_first_login(browser, capture_page_artifac
 @pytest.mark.pw3
 def test_pw3_phone_number_verified_claim(keycloak_issuer):
     headers = _admin_headers()
+    # KC 26 User Profile: custom attributes must be declared in the realm schema before
+    # they can be set on users. Without this, the attribute is silently dropped on PUT.
     _ensure_user_profile_attribute(headers, "phoneNumber", display_name="phoneNumber")
     _ensure_user_profile_attribute(headers, "phoneNumberVerified", display_name="phoneNumberVerified")
     _set_user_attribute_api(headers, TEST_USER, "phoneNumber", "+33612345678")

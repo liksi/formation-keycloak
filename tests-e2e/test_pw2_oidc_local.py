@@ -58,6 +58,8 @@ def test_pw2_sso_no_reauth_with_existing_session(
     process_manager,
 ):
     headers = _admin_headers()
+    # Disable consent for this client: seed_training_realm may leave it enabled,
+    # which would block the SSO test with an unexpected consent screen.
     _update_client(headers, SECRET_WEBAPP_CLIENT, consentRequired=False)
     workspace = workspace_factory("pw2-sso-no-reauth", "pw2_secret_webapp_local_keycloak")
     workspace_manager.replace(
@@ -109,6 +111,9 @@ def test_pw2_sso_logout_clears_session(keycloak_issuer):
     sessions.raise_for_status()
     assert len(sessions.json()) > 0, "Expected active KC session after login"
 
+    # KC 26 removed DELETE /users/{uid}/sessions for logout purposes.
+    # POST /users/{uid}/logout is the correct endpoint: it terminates all active sessions
+    # and invalidates all tokens for the user.
     logout_resp = requests.post(
         f"{KEYCLOAK_URL}/admin/realms/{REALM_NAME}/users/{uid}/logout",
         headers=headers,

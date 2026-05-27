@@ -209,6 +209,10 @@ def _pw7_clear_required_actions(
 def _pw7_register_required_action(
     base_url: str, headers: dict, realm: str, action_id: str
 ) -> None:
+    # Even if the SPI JAR is deployed, KC does not automatically register a required
+    # action in a realm. It must be registered explicitly via the Admin API before it
+    # can be assigned to users. The unregistered-required-actions endpoint discovers
+    # available but not-yet-registered actions from loaded SPIs.
     actions_resp = requests.get(
         f"{base_url}/admin/realms/{realm}/authentication/required-actions",
         headers=headers,
@@ -238,6 +242,12 @@ def _pw7_register_required_action(
 def _pw7_setup_question_auth_flow(
     base_url: str, headers: dict, realm: str, flow_alias: str
 ) -> None:
+    # KC does not allow adding an authenticator directly to a top-level browser flow:
+    # it must be nested inside a sub-flow of "forms" (the credential-gathering group).
+    # Strategy: copy the browser flow → add a sub-flow inside "forms" → add the
+    # secret-question-authenticator inside that sub-flow → set both to REQUIRED →
+    # move the sub-flow to index 1 (right after Username/Password) via raise-priority.
+    # The outer sub-flow is set as browser flow on the realm.
     flows_resp = requests.get(
         f"{base_url}/admin/realms/{realm}/authentication/flows",
         headers=headers,
@@ -368,12 +378,18 @@ def _pw7_reset_browser_flow(base_url: str, headers: dict, realm: str) -> None:
 
 
 def _pw7_fill_login_form(page, username: str, password: str) -> None:
+    # Use attribute selectors rather than get_by_role("textbox", name="Username or email")
+    # because the custom theme may change the visible label text.
     page.locator('input[name="username"], input#username').first.fill(username)
     page.locator('input[name="password"], input#password').first.fill(password)
     page.locator('input[type="submit"], button[type="submit"], input[name="login"]').first.click()
 
 
 def _pw7_enable_unmanaged_attributes(base_url: str, headers: dict, realm: str) -> None:
+    # KC 26 introduced User Profile by default: only attributes declared in the schema
+    # are accepted; everything else is silently dropped on user PUT.
+    # Setting unmanagedAttributePolicy=ENABLED allows arbitrary custom attributes
+    # (age, question, answer) without declaring each one individually.
     config_resp = requests.get(
         f"{base_url}/admin/realms/{realm}/users/profile",
         headers=headers,
@@ -392,6 +408,10 @@ def _pw7_enable_unmanaged_attributes(base_url: str, headers: dict, realm: str) -
     ).raise_for_status()
 
 
+# Playwright throws "connection refused" when KC redirects to a redirect_uri with no server
+# listening. We spin up a minimal in-process HTTP server to catch those redirects,
+# which lets us assert that the authorization code was delivered correctly.
+# The server uses port 0 (OS-assigned) to avoid conflicts between concurrent tests.
 class _PW7CallbackHandler(http.server.BaseHTTPRequestHandler):
     callback_path: str | None = None
 
@@ -407,6 +427,8 @@ class _PW7CallbackHandler(http.server.BaseHTTPRequestHandler):
 
 
 class _PW7ReusableTCPServer(socketserver.TCPServer):
+    # Prevents "Address already in use" if the previous test released the port
+    # just moments before (TIME_WAIT TCP state).
     allow_reuse_address = True
 
 
@@ -429,7 +451,12 @@ def _pw7_callback_server():
 
 @pytest.fixture(scope="module")
 def pw7_keycloak(workspace_manager):
-    """Start a dedicated KC instance with patched provider + theme on port 18080."""
+    """Start a dedicated KC instance with patched provider + theme on port 18080.
+
+    Uses workspace_manager (session-scoped) directly instead of workspace_factory
+    (function-scoped) because pytest forbids a module-scoped fixture from depending
+    on a function-scoped one.
+    """
     workspace = workspace_manager.create("pw7-kc-full")
     for solution in (
         "pw7_theme_enable",
@@ -458,6 +485,9 @@ def pw7_keycloak(workspace_manager):
             "-e", "KEYCLOAK_ADMIN_PASSWORD=admin",
             "-v", f"{jar}:/opt/keycloak/providers/registration-spi.jar",
             "-v", f"{theme_dir}/:/opt/keycloak/themes/",
+            # Must use the official image: the project's custom keycloak:latest has
+            # ENTRYPOINT ["kc.sh", "start"] and cannot accept "start-dev" as CMD.
+            # The official image uses bare ENTRYPOINT ["kc.sh"] which allows it.
             "quay.io/keycloak/keycloak:26.6.2",
             "start-dev",
         ],
@@ -499,7 +529,11 @@ def pw7_keycloak(workspace_manager):
     requests.put(
         f"{base_url}/admin/realms/master", headers=headers, json=realm_payload, timeout=30
     ).raise_for_status()
+    # Allow arbitrary user attributes without declaring each one in the User Profile schema.
     _pw7_enable_unmanaged_attributes(base_url, headers, "master")
+    # Pre-populate question/answer on the admin user so that if the question-authenticator
+    # flow is accidentally left active (e.g. a test fails mid-cleanup), the admin can still
+    # log in through the browser without being blocked by the security question challenge.
     _pw7_set_user_attribute(
         base_url, headers, "master", "admin", "question", "Admin bootstrap question"
     )
@@ -593,6 +627,8 @@ def test_pw7_age_mapper_adult_claim(pw7_keycloak):
     headers = _pw7_admin_headers(base_url)
     realm = "master"
 
+    # Reset in case a previous test left a custom browser flow active. The password grant
+    # used here bypasses the browser flow, but resetting keeps the realm in a clean state.
     _pw7_reset_browser_flow(base_url, headers, realm)
     _pw7_ensure_client(base_url, headers, realm, "pw7-test-client", direct_access=True)
     client_uuid = _pw7_client_uuid(base_url, headers, realm, "pw7-test-client")
@@ -624,8 +660,12 @@ def test_pw7_age_mapper_adult_claim(pw7_keycloak):
     # AgeMapper.MIN_AGE = 21; use age=25 for adult, age=15 for minor
     _pw7_ensure_user(base_url, headers, realm, "adult_user", "AdultPass1!", age="25")
     _pw7_ensure_user(base_url, headers, realm, "minor_user", "MinorPass1!", age="15")
+    # The fixture is module-scoped: users persist across tests. If a previous test run
+    # left a required action on these users, the password grant would fail (KC rejects
+    # direct grants for users with pending required actions). Clear them defensively.
     _pw7_clear_required_actions(base_url, headers, realm, "adult_user")
     _pw7_clear_required_actions(base_url, headers, realm, "minor_user")
+    # question/answer needed so the question-authenticator (if active) doesn't block login.
     _pw7_set_user_attribute(base_url, headers, realm, "adult_user", "question", "Adult question")
     _pw7_set_user_attribute(base_url, headers, realm, "adult_user", "answer", "adult")
     _pw7_set_user_attribute(base_url, headers, realm, "minor_user", "question", "Minor question")
@@ -656,6 +696,8 @@ def test_pw7_age_mapper_adult_claim(pw7_keycloak):
     )
     minor_resp.raise_for_status()
 
+    # Decode id_token, not access_token: AgeMapper maps to id.token.claim=true.
+    # In KC 26 the access token may omit mapper claims that are not tied to a client scope.
     adult_claims = decode_jwt(adult_resp.json()["id_token"])
     minor_claims = decode_jwt(minor_resp.json()["id_token"])
 
@@ -674,6 +716,8 @@ def test_pw7_required_action_question_form(pw7_keycloak, browser, capture_page_a
     headers = _pw7_admin_headers(base_url)
     realm = "master"
 
+    # Ensure no custom auth flow is active before this test: we need the standard browser
+    # flow so that the required action prompt is reached after normal credential entry.
     _pw7_reset_browser_flow(base_url, headers, realm)
     with _pw7_callback_server() as callback_port:
         _pw7_ensure_client(
@@ -686,6 +730,8 @@ def test_pw7_required_action_question_form(pw7_keycloak, browser, capture_page_a
         )
         _pw7_register_required_action(base_url, headers, realm, "update_question")
         _pw7_ensure_user(base_url, headers, realm, "question_user", "QuestionPass1!")
+        # Clear any leftover required actions from a previous run before adding update_question,
+        # to avoid stacking actions that would produce an unexpected form order.
         _pw7_clear_required_actions(base_url, headers, realm, "question_user")
         _pw7_add_required_action(base_url, headers, realm, "question_user", "update_question")
         auth_url = (
@@ -713,6 +759,9 @@ def test_pw7_required_action_question_form(pw7_keycloak, browser, capture_page_a
 
             page.fill('[name="question"]', "What is my favorite color?")
             page.fill('[name="answer"]', "blue")
+            # expect_navigation can raise if the redirect arrives faster than the context
+            # manager starts, or if the target URL's server closes the connection immediately.
+            # suppress() lets us continue and let wait_for_url do the real assertion.
             with contextlib.suppress(Exception):
                 with page.expect_navigation(wait_until="load", timeout=10_000):
                     page.locator('input[type="submit"], button[type="submit"]').first.click()
@@ -734,6 +783,8 @@ def test_pw7_question_authenticator_flow(pw7_keycloak, browser, capture_page_art
     headers = _pw7_admin_headers(base_url)
     realm = "master"
 
+    # Start from a clean browser flow; _pw7_setup_question_auth_flow will then install
+    # the custom flow and set it as the active browser flow for the realm.
     _pw7_reset_browser_flow(base_url, headers, realm)
     with _pw7_callback_server() as callback_port:
         _pw7_ensure_client(
@@ -746,6 +797,8 @@ def test_pw7_question_authenticator_flow(pw7_keycloak, browser, capture_page_art
         )
         _pw7_setup_question_auth_flow(base_url, headers, realm, "browser-question")
         _pw7_ensure_user(base_url, headers, realm, "auth_question_user", "AuthQPass1!")
+        # Clear required actions: if update_question is still set from the previous test,
+        # the browser flow would show that form instead of the authenticator challenge.
         _pw7_clear_required_actions(base_url, headers, realm, "auth_question_user")
         _pw7_set_user_attribute(
             base_url, headers, realm, "auth_question_user", "question", "What is 2+2?"
@@ -771,6 +824,8 @@ def test_pw7_question_authenticator_flow(pw7_keycloak, browser, capture_page_art
             ), "Question authenticator should present the question form after credentials"
 
             page1.fill('[name="answer"]', "4")
+            # Same suppress pattern as the required-action test: the redirect to the
+            # callback server may arrive before expect_navigation is fully set up.
             with contextlib.suppress(Exception):
                 with page1.expect_navigation(wait_until="load", timeout=10_000):
                     page1.locator('input[type="submit"], button[type="submit"]').first.click()
