@@ -7,7 +7,7 @@ from conftest import (CURL_CLIENT, KEYCLOAK_URL, MAILDEV_URL, REALM_NAME,
                       SECRET_WEBAPP_CLIENT, TEST_PASSWORD, TEST_USER,
                       _add_required_action_api, _add_user_to_group_api,
                       _admin_headers, _assign_role_to_group_api,
-                      _client_secret, _configure_smtp_api,
+                      _client_secret, _configure_smtp_api, _ensure_client,
                       _ensure_client_scope_assigned, _ensure_group,
                       _ensure_role, _ensure_user,
                       _ensure_user_profile_attribute, _set_password_policy_api,
@@ -399,4 +399,80 @@ def test_pw3_custom_scope_company_claims_id_token_only(keycloak_issuer):
     )
     assert "company_name" not in access_claims, (
         "company_name claim must not be present in access token (id_token only mapper)"
+    )
+
+
+@pytest.mark.pw3
+def test_pw3_consent_screen_appears_on_first_login(browser, capture_page_artifacts):
+    headers = _admin_headers()
+    _ensure_client(
+        headers,
+        "consent-test-client",
+        public=True,
+        redirect_uris=["http://localhost:9999/*"],
+    )
+    _update_client(headers, "consent-test-client", consentRequired=True)
+    _ensure_user(
+        headers,
+        "consent_user",
+        "ConsentPass1!",
+        email="consent@example.com",
+        first_name="Consent",
+        last_name="User",
+    )
+
+    auth_url = (
+        f"{KEYCLOAK_URL}/realms/{REALM_NAME}/protocol/openid-connect/auth"
+        "?client_id=consent-test-client&response_type=code&scope=openid"
+        "&redirect_uri=http://localhost:9999/"
+    )
+
+    context = browser.new_context(ignore_https_errors=True)
+    page = context.new_page()
+    page.set_default_timeout(20_000)
+    capture_page_artifacts(page, "consent-screen")
+    try:
+        page.goto(auth_url, wait_until="domcontentloaded")
+        page.wait_for_load_state("networkidle")
+        page.get_by_role("textbox", name="Username or email").fill("consent_user")
+        page.get_by_role("textbox", name="Password").fill("ConsentPass1!")
+        page.get_by_role("button", name="Sign In").click()
+        page.wait_for_load_state("networkidle")
+
+        page_content = page.content().lower()
+        assert any(
+            word in page_content for word in ["consent", "grant", "allow", "access"]
+        ), "Consent screen should appear after login for consentRequired client"
+
+        try:
+            with page.expect_navigation(wait_until="commit", timeout=5_000):
+                page.get_by_role("button", name="Allow").click()
+        except Exception:
+            pass
+
+        assert "localhost:9999" in page.url, (
+            "After granting consent, KC should redirect to the configured redirect_uri"
+        )
+        assert "code=" in page.url, "Authorization code should be present in redirect URL"
+    finally:
+        context.close()
+
+
+@pytest.mark.pw3
+def test_pw3_phone_number_verified_claim(keycloak_issuer):
+    headers = _admin_headers()
+    _ensure_user_profile_attribute(headers, "phoneNumber", display_name="phoneNumber")
+    _ensure_user_profile_attribute(headers, "phoneNumberVerified", display_name="phoneNumberVerified")
+    _set_user_attribute_api(headers, TEST_USER, "phoneNumber", "+33612345678")
+    _set_user_attribute_api(headers, TEST_USER, "phoneNumberVerified", "true")
+    _ensure_client_scope_assigned(headers, CURL_CLIENT, "phone", optional=True)
+
+    token = get_token(keycloak_issuer, CURL_CLIENT, TEST_USER, TEST_PASSWORD, scope="openid phone")
+    claims = decode_jwt(token["access_token"])
+
+    assert claims.get("phone_number") == "+33612345678", (
+        "phone_number claim must be present in access token when phone scope is requested"
+    )
+    assert claims.get("phone_number_verified") is True or claims.get("phone_number_verified") == "true", (
+        "phone_number_verified claim must reflect the user's phoneNumberVerified attribute"
     )

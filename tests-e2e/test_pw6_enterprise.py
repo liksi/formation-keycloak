@@ -7,8 +7,8 @@ import requests
 
 from conftest import (CURL_CLIENT, KEYCLOAK_URL, OAUTH2_PROXY_CLIENT,
                       REALM_NAME, TEST_PASSWORD, TEST_USER, _admin_headers,
-                      _client_secret, _ensure_client,
-                      _ensure_client_protocol_mapper)
+                      _assign_role_to_user_api, _client_secret, _ensure_client,
+                      _ensure_client_protocol_mapper, _ensure_role, _ensure_user)
 from helpers.keycloak_ui import add_ldap_federation, sync_ldap_users
 from helpers.keycloak_ui import \
     test_ldap_connection as run_ldap_connection_check
@@ -249,3 +249,115 @@ def test_pw6_ldap_user_can_login(keycloak_issuer):
 
     token = get_token(keycloak_issuer, CURL_CLIENT, "ldap-user", "pwd")
     assert token.get("access_token"), "LDAP user should receive a valid access token"
+
+
+@pytest.mark.pw6
+@pytest.mark.slow
+def test_pw6_oauth2_proxy_role_restriction(
+    browser,
+    capture_page_artifacts,
+    workspace_factory,
+    workspace_manager,
+    process_manager,
+):
+    headers = _admin_headers()
+    _ensure_client(
+        headers,
+        OAUTH2_PROXY_CLIENT,
+        public=False,
+        redirect_uris=["http://localhost:4180/oauth2/callback"],
+    )
+    _ensure_client_protocol_mapper(
+        headers,
+        OAUTH2_PROXY_CLIENT,
+        "oauth2-proxy-audience",
+        "oidc-audience-mapper",
+        {
+            "included.client.audience": OAUTH2_PROXY_CLIENT,
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "included.custom.audience": "",
+        },
+    )
+    client_secret = _client_secret(headers, OAUTH2_PROXY_CLIENT)
+
+    _ensure_role(headers, "MANAGER")
+    _assign_role_to_user_api(headers, TEST_USER, "MANAGER")
+    _ensure_user(
+        headers,
+        "unauth_user",
+        "UnauthPass1!",
+        email="unauth@example.com",
+        first_name="Unauth",
+        last_name="User",
+    )
+
+    workspace = workspace_factory("pw6-oauth2-proxy-roles", "pw6_oauth2_proxy_compose")
+    workspace_manager.replace(
+        workspace,
+        "docker-compose.yml",
+        '      OAUTH2_PROXY_CLIENT_SECRET: "PVIrotLG3RhMifMKu9MCaHmpMj81x5JD"',
+        f'      OAUTH2_PROXY_CLIENT_SECRET: "{client_secret}"',
+    )
+    workspace_manager.replace(
+        workspace,
+        "docker-compose.yml",
+        '      OAUTH2_PROXY_OIDC_ISSUER_URL: "http://localhost:8080/realms/master"',
+        '      OAUTH2_PROXY_OIDC_ISSUER_URL: "http://localhost:8080/realms/training"',
+    )
+    workspace_manager.replace(
+        workspace,
+        "docker-compose.yml",
+        '    #OAUTH2_PROXY_ALLOWED_ROLES: "MANAGER"',
+        '    OAUTH2_PROXY_ALLOWED_ROLES: "MANAGER"',
+    )
+
+    process_manager.start_secret_webapp(workspace)
+    workspace_stack = DockerStack(workspace)
+    workspace_stack.rm("oauth2-proxy")
+    workspace_stack.up_no_deps("oauth2-proxy")
+    try:
+        protected_url = "http://localhost:4180/secret/index.html"
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline:
+            try:
+                candidate = requests.get(protected_url, timeout=5, allow_redirects=False)
+                if candidate.status_code in (302, 303):
+                    break
+            except requests.RequestException:
+                pass
+            time.sleep(1)
+
+        context1 = browser.new_context(ignore_https_errors=True)
+        page1 = context1.new_page()
+        page1.set_default_timeout(20_000)
+        capture_page_artifacts(page1, "oauth2-proxy-role-denied")
+        page1.goto(protected_url, wait_until="domcontentloaded")
+        page1.get_by_role("textbox", name="Username or email").fill("unauth_user")
+        page1.get_by_role("textbox", name="Password").fill("UnauthPass1!")
+        page1.get_by_role("button", name="Sign In").click()
+        page1.wait_for_load_state("networkidle")
+        denied_content = page1.content().lower()
+        assert (
+            "403" in denied_content
+            or "forbidden" in denied_content
+            or "you do not have access" in denied_content
+            or "unauthorized" in denied_content
+        ), f"User without MANAGER role should be denied access, got: {page1.url}"
+        context1.close()
+
+        context2 = browser.new_context(ignore_https_errors=True)
+        page2 = context2.new_page()
+        page2.set_default_timeout(20_000)
+        capture_page_artifacts(page2, "oauth2-proxy-role-allowed")
+        page2.goto(protected_url, wait_until="domcontentloaded")
+        page2.get_by_role("textbox", name="Username or email").fill(TEST_USER)
+        page2.get_by_role("textbox", name="Password").fill(TEST_PASSWORD)
+        page2.get_by_role("button", name="Sign In").click()
+        page2.wait_for_load_state("networkidle")
+        assert page2.get_by_role("heading", name="Keycloak rocks !").count() == 1, (
+            "User with MANAGER role should be granted access through oauth2-proxy"
+        )
+        context2.close()
+    finally:
+        workspace_stack.rm("oauth2-proxy")
