@@ -1,0 +1,27 @@
+diff --git a/keycloak/Dockerfile b/keycloak/Dockerfile
+index 04d39c3..56b7682 100644
+--- a/keycloak/Dockerfile
++++ b/keycloak/Dockerfile
+@@
+-#COPY provider/target/*.jar /opt/keycloak/providers/
++COPY provider/target/*.jar /opt/keycloak/providers/
+diff --git a/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/mapper/AgeMapper.java b/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/mapper/AgeMapper.java
+index 549b1e9..2e5f236 100644
+--- a/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/mapper/AgeMapper.java
++++ b/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/mapper/AgeMapper.java
+@@
+-        String ageStr = ""; //FIXME
++        String ageStr = userSession.getUser().getFirstAttribute("age");
+         Integer age = convertToInt(ageStr);
+         if (age != null) {
+             boolean isAdult = age >= MIN_AGE;
+-            // FIXME - add new claim
++            token.getOtherClaims().put("is_adult", isAdult);
+         }
+diff --git a/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.protocol.ProtocolMapper b/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.protocol.ProtocolMapper
+index 0d3b4f1..e54c814 100644
+--- a/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.protocol.ProtocolMapper
++++ b/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.protocol.ProtocolMapper
+@@
+-#fr.liksi.formation.keycloak.mapper.AgeMapper
++fr.liksi.formation.keycloak.mapper.AgeMapper

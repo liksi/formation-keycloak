@@ -169,10 +169,32 @@ mvn clean test -f secret-webapp/pom.xml        # 10 tests
 
 # Vue unit tests (8 tests)
 npm --prefix vue-app test
-
-# E2E smoke test (requires Docker)
-./scripts/e2e-test.sh
 ```
+
+### End-to-end tests
+
+The `tests-e2e/` directory contains a Playwright/Python suite that validates each practical
+work exercise against the local lab. It starts infrastructure via Docker, seeds the Keycloak
+realm via the Admin API, and checks expected behaviour — including OIDC flows, Spring Boot app
+responses, and browser-based admin console interactions.
+
+Prerequisites:
+
+```bash
+cd tests-e2e
+uv sync
+uv run playwright install chromium
+```
+
+```bash
+uv run pytest                        # full suite
+uv run pytest -m "not slow"          # skip long app-compilation tests
+uv run pytest -m pw3                 # one practical work
+uv run pytest test_pw1_auth_modes.py # one file
+```
+
+See [`tests-e2e/README.md`](tests-e2e/README.md) for a full description of the suite architecture,
+design decisions, and troubleshooting tips.
 
 ## Building the Keycloak SPI Provider
 
@@ -228,9 +250,11 @@ formation-keycloak/
 │       ├── main.js               # Keycloak login + HTTP interceptor
 │       └── keycloak.js           # Keycloak adapter wrapper
 ├── docker-compose.yml            # Full stack — one-command startup
-├── scripts/
-│   ├── audit.sh                  # Dependency update checker
-│   └── e2e-test.sh               # End-to-end smoke test
+├── tests-e2e/                    # Playwright/Python end-to-end test suite
+│   ├── conftest.py               # Fixtures and Keycloak Admin API helpers
+│   ├── helpers/                  # Reusable modules (stack, workspace, OIDC, UI, LDAP…)
+│   ├── solutions/                # Reference patch files for each FIXME step
+│   └── test_pw*.py               # Test files, one per practical work
 └── strigo/
     └── script.sh                 # Strigo Lab VM provisioning
 ```

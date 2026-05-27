@@ -1,0 +1,28 @@
+[project]
+name = "formation-keycloak-tests"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "pytest>=8",
+    "pytest-timeout>=2",
+    "requests>=2",
+    "pyjwt>=2",
+    "cryptography>=48.0.0",
+    "playwright>=1.60.0",
+    "pytest-playwright>=0.8.0",
+    "ldap3>=2.9.1",
+]
+
+[tool.pytest.ini_options]
+timeout = 120
+markers = [
+    "pw1: PW1 auth mode coverage",
+    "pw2: PW2 OIDC coverage",
+    "pw3: PW3 Keycloak configuration coverage",
+    "pw5: PW5 API and SPA coverage",
+    "pw6: PW6 enterprise coverage",
+    "pw7: PW7 customization coverage",
+    "provider: custom provider coverage",
+    "smoke: fast end-to-end smoke coverage",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]

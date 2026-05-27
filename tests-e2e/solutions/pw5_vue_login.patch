@@ -1,0 +1,18 @@
+diff --git a/vue-app/src/main.js b/vue-app/src/main.js
+index 749b5ff..941f1d2 100644
+--- a/vue-app/src/main.js
++++ b/vue-app/src/main.js
+@@
+-//login().then(() => {
+-  app.mount('#app')
+-//}, () => {})
++login().then(() => {
++  app.mount('#app')
++}, () => {})
+diff --git a/vue-app/src/keycloak.js b/vue-app/src/keycloak.js
+index c2badca..d669683 100644
+--- a/vue-app/src/keycloak.js
++++ b/vue-app/src/keycloak.js
+@@
+-  url: 'http://localhost:8080', realm: 'test', clientId: 'vue', onLoad: 'login-required'
++  url: 'http://localhost:8080', realm: 'training', clientId: 'vue', onLoad: 'login-required'

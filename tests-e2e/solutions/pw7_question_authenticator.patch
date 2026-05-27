@@ -1,0 +1,56 @@
+diff --git a/keycloak/Dockerfile b/keycloak/Dockerfile
+index 04d39c3..f33f573 100644
+--- a/keycloak/Dockerfile
++++ b/keycloak/Dockerfile
+@@
+-#COPY theme/ /opt/keycloak/themes/
+-#COPY provider/target/*.jar /opt/keycloak/providers/
++COPY theme/ /opt/keycloak/themes/
++COPY provider/target/*.jar /opt/keycloak/providers/
+diff --git a/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/authenticator/QuestionAuthenticator.java b/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/authenticator/QuestionAuthenticator.java
+index 0779f1a..8f04245 100644
+--- a/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/authenticator/QuestionAuthenticator.java
++++ b/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/authenticator/QuestionAuthenticator.java
+@@
+-        if (StringUtil.isBlank(question)) {
+-            // FIXME
++        if (StringUtil.isBlank(question)) {
++            context.success();
+         } else {
+             LoginFormsProvider forms = context.form();
+-            // FIXME
++            forms.setAttribute("question", question);
+             context.challenge(context.form().createForm("question.ftl"));
+         }
+@@
+-        if (true) { // FIXME
++        if (answer != null && answer.equalsIgnoreCase(context.getUser().getFirstAttribute("answer"))) {
+             context.success();
+         } else {
+             LoginFormsProvider forms = context.form();
+             forms.setError("Wrong answer");
+-            // FIXME
++            forms.setAttribute("question", context.getUser().getFirstAttribute("question"));
+             context.challenge(forms.createForm("question.ftl"));
+         }
+diff --git a/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.authentication.AuthenticatorFactory b/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.authentication.AuthenticatorFactory
+index 0e0b9d0..46b4731 100644
+--- a/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.authentication.AuthenticatorFactory
++++ b/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.authentication.AuthenticatorFactory
+@@
+-#fr.liksi.formation.keycloak.authenticator.QuestionAuthenticatorFactory
++fr.liksi.formation.keycloak.authenticator.QuestionAuthenticatorFactory
+diff --git a/keycloak/theme/custom/login/messages/messages_en.properties b/keycloak/theme/custom/login/messages/messages_en.properties
+index e3a8059..ecb6b83 100644
+--- a/keycloak/theme/custom/login/messages/messages_en.properties
++++ b/keycloak/theme/custom/login/messages/messages_en.properties
+@@
+ # encoding: UTF-8
+ 
+ # format:
+ # titleKey=Your message
++loginAccountTitle=Dear user, please login to access this page
++updateQuestionTitle=Set your secret question
++answerQuestionTitle=Answer your secret question
++question=Question
++answer=Answer

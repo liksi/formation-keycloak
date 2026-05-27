@@ -1,0 +1,50 @@
+diff --git a/keycloak/Dockerfile b/keycloak/Dockerfile
+index 04d39c3..f33f573 100644
+--- a/keycloak/Dockerfile
++++ b/keycloak/Dockerfile
+@@
+-#COPY theme/ /opt/keycloak/themes/
+-#COPY provider/target/*.jar /opt/keycloak/providers/
++COPY theme/ /opt/keycloak/themes/
++COPY provider/target/*.jar /opt/keycloak/providers/
+diff --git a/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/requiredaction/UpdateQuestionAction.java b/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/requiredaction/UpdateQuestionAction.java
+index 5504891..3d6392b 100644
+--- a/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/requiredaction/UpdateQuestionAction.java
++++ b/keycloak/provider/src/main/java/fr/liksi/formation/keycloak/requiredaction/UpdateQuestionAction.java
+@@
+-        if (false) { // FIXME
++        if (StringUtil.isBlank(context.getUser().getFirstAttribute("question"))) {
+             context.getUser().addRequiredAction(PROVIDER_ID);
+         }
+@@
+-        String answer = null; // FIXME
+-        String question = null; // FIXME
++        String answer = formData.getFirst("answer");
++        String question = formData.getFirst("question");
+ 
+-        // FIXME - store answer and question in user attributes
++        context.getUser().setSingleAttribute("answer", answer);
++        context.getUser().setSingleAttribute("question", question);
+ 
+         context.success();
+diff --git a/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.authentication.RequiredActionFactory b/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.authentication.RequiredActionFactory
+index 3863ccd..d79d0e8 100644
+--- a/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.authentication.RequiredActionFactory
++++ b/keycloak/provider/src/main/resources/META-INF/services/org.keycloak.authentication.RequiredActionFactory
+@@
+-#fr.liksi.formation.keycloak.requiredaction.UpdateQuestionActionFactory
++fr.liksi.formation.keycloak.requiredaction.UpdateQuestionActionFactory
+diff --git a/keycloak/theme/custom/login/messages/messages_en.properties b/keycloak/theme/custom/login/messages/messages_en.properties
+index e3a8059..ecb6b83 100644
+--- a/keycloak/theme/custom/login/messages/messages_en.properties
++++ b/keycloak/theme/custom/login/messages/messages_en.properties
+@@
+ # encoding: UTF-8
+ 
+ # format:
+ # titleKey=Your message
++loginAccountTitle=Dear user, please login to access this page
++updateQuestionTitle=Set your secret question
++answerQuestionTitle=Answer your secret question
++question=Question
++answer=Answer

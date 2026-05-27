@@ -1,0 +1,36 @@
+diff --git a/vue-app/src/keycloak.js b/vue-app/src/keycloak.js
+index c2badca..ef1f561 100644
+--- a/vue-app/src/keycloak.js
++++ b/vue-app/src/keycloak.js
+@@
+-    //scheduleRefresh()
++    scheduleRefresh()
+@@
+-// function scheduleRefresh () {
+-//   setInterval(() => {
+-//     keycloak.updateToken(30).then((refreshed) => {
+-//       if (refreshed) {
+-//         console.log('Token refreshed' + refreshed)
+-//       } else {
+-//         console.log('Token not refreshed, valid for ' +
+-//           Math.round(keycloak.tokenParsed.exp + keycloak.timeSkew - new Date().getTime() / 1000) + ' seconds')
+-//       }
+-//     }, () => {
+-//       console.log('Failed to refresh token')
+-//     })
+-//   }, 10000)
+-// }
++function scheduleRefresh () {
++  setInterval(() => {
++    keycloak.updateToken(30).then((refreshed) => {
++      if (refreshed) {
++        console.log('Token refreshed' + refreshed)
++      } else {
++        console.log('Token not refreshed, valid for ' +
++          Math.round(keycloak.tokenParsed.exp + keycloak.timeSkew - new Date().getTime() / 1000) + ' seconds')
++      }
++    }, () => {
++      console.log('Failed to refresh token')
++    })
++  }, 10000)
++}
