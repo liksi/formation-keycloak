@@ -6,6 +6,7 @@ const mockKeycloakInstance = {
   tokenParsed: {},
   idTokenParsed: { preferred_username: 'john.doe' },
   realmAccess: { roles: ['ROLE_ADMIN', 'ROLE_USER'] },
+  authenticated: true,
   accountManagement: vi.fn(),
   logout: vi.fn(),
 }
@@ -64,6 +65,22 @@ describe('keycloak.js', () => {
       const { gotoAccount } = await import('../src/keycloak.js')
       gotoAccount()
       expect(mockKeycloakInstance.accountManagement).toHaveBeenCalled()
+    })
+  })
+
+  describe('getTokenParsed', () => {
+    it('should return tokenParsed when available', async () => {
+      mockKeycloakInstance.tokenParsed = { sub: 'abc', exp: 9999999999 }
+      vi.resetModules()
+      const { getTokenParsed } = await import('../src/keycloak.js')
+      expect(getTokenParsed()).toEqual({ sub: 'abc', exp: 9999999999 })
+    })
+
+    it('should return null when tokenParsed is undefined', async () => {
+      mockKeycloakInstance.tokenParsed = undefined
+      vi.resetModules()
+      const { getTokenParsed } = await import('../src/keycloak.js')
+      expect(getTokenParsed()).toBeNull()
     })
   })
 
