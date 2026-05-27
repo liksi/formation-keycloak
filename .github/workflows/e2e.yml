@@ -71,8 +71,8 @@ jobs:
 
       - name: Pre-warm Maven dependency cache
         run: |
-          ./mvnw -B -q dependency:go-offline -f api/pom.xml
-          ./mvnw -B -q dependency:go-offline -f secret-webapp/pom.xml
+          cd api && ./mvnw -B -q dependency:go-offline
+          cd secret-webapp && ./mvnw -B -q dependency:go-offline
 
       - name: Cache vue-app node_modules
         id: cache-node-modules
