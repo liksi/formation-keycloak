@@ -1,0 +1,21 @@
+diff --git a/keycloak/Dockerfile b/keycloak/Dockerfile
+index 04d39c3..97be5d5 100644
+--- a/keycloak/Dockerfile
++++ b/keycloak/Dockerfile
+@@
+-#COPY theme/ /opt/keycloak/themes/
++COPY theme/ /opt/keycloak/themes/
+diff --git a/keycloak/theme/custom/login/messages/messages_en.properties b/keycloak/theme/custom/login/messages/messages_en.properties
+index e3a8059..ecb6b83 100644
+--- a/keycloak/theme/custom/login/messages/messages_en.properties
++++ b/keycloak/theme/custom/login/messages/messages_en.properties
+@@
+ # encoding: UTF-8
+ 
+ # format:
+ # titleKey=Your message
++loginAccountTitle=Dear user, please login to access this page
++updateQuestionTitle=Set your secret question
++answerQuestionTitle=Answer your secret question
++question=Question
++answer=Answer

@@ -2,3 +2,7 @@ keycloak/provider/target
 keycloak/provider/*.iml
 hardway/
 .idea
+vue-app/dist/
+api/target
+secret-webapp/target
+.playwright-mcp/

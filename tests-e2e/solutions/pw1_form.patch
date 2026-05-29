@@ -1,0 +1,11 @@
+diff --git a/secret-webapp/src/main/resources/application.yml b/secret-webapp/src/main/resources/application.yml
+index 0ba04f1..6eaeeeb 100644
+--- a/secret-webapp/src/main/resources/application.yml
++++ b/secret-webapp/src/main/resources/application.yml
+@@
+-authentication-mode: none
++#authentication-mode: none
+ #authentication-mode: basic
+-#authentication-mode: form
++authentication-mode: form
+ #authentication-mode: keycloak

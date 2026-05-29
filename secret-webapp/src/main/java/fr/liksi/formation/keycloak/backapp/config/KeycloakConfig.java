@@ -3,7 +3,6 @@ package fr.liksi.formation.keycloak.backapp.config;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,7 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Configuration
 @ConditionalOnProperty(value = "authentication-mode", havingValue = "keycloak")
@@ -48,15 +46,14 @@ public class KeycloakConfig {
         return (authorities) -> {
             Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
             authorities.forEach(authority -> {
-                if (authority instanceof OidcUserAuthority) {
-                    OidcUserAuthority oidcUserAuthority = (OidcUserAuthority) authority;
+                if (authority instanceof OidcUserAuthority oidcUserAuthority) {
                     OidcIdToken idToken = oidcUserAuthority.getIdToken();
                     Map<String, Object> realmsAccessClaim = idToken.getClaimAsMap("realm_access");
                     if (realmsAccessClaim != null) {
                         List<String> realmsRoles = (List<String>) realmsAccessClaim.get("roles");
                         if (realmsRoles != null) {
                             realmsRoles.stream()
-                                    .map(role -> new SimpleGrantedAuthority(role))
+                                    .map(SimpleGrantedAuthority::new)
                                     .forEach(mappedAuthorities::add);
                         }
                     }
@@ -67,4 +64,3 @@ public class KeycloakConfig {
     }
 
 }
-

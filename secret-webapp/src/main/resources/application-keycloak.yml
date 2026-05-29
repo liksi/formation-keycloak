@@ -1,0 +1,13 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: secret-webapp
+            client-secret: hC0VxkSVOkxzAewulJ2arhfKTYNOWYOQ
+            authorization-grant-type: authorization_code
+            scope: openid
+        provider:
+          keycloak:
+            issuer-uri: https://lemur-5.cloud-iam.com/auth/realms/keycloak-training

@@ -1,0 +1,15 @@
+diff --git a/vue-app/src/components/FetchBox.vue b/vue-app/src/components/FetchBox.vue
+index 9fdafc1..842bb53 100644
+--- a/vue-app/src/components/FetchBox.vue
++++ b/vue-app/src/components/FetchBox.vue
+@@
+-import { getRoles } from '@/keycloak'
++import { getAccessToken, getRoles } from '@/keycloak'
+@@
+-      fetch('http://localhost:8091/messages/' + this.kind)
++      fetch('http://localhost:8091/messages/' + this.kind, {
++        headers: {
++          Authorization: 'Bearer ' + getAccessToken()
++        }
++      })
+         .then(res => res.json())

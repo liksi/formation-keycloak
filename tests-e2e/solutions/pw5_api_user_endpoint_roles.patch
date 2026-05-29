@@ -1,0 +1,7 @@
+diff --git a/api/src/main/java/fr/liksi/formation/keycloak/resourceprovider/config/OauthResourceConfiguration.java b/api/src/main/java/fr/liksi/formation/keycloak/resourceprovider/config/OauthResourceConfiguration.java
+index ff4ec98..59b716f 100644
+--- a/api/src/main/java/fr/liksi/formation/keycloak/resourceprovider/config/OauthResourceConfiguration.java
++++ b/api/src/main/java/fr/liksi/formation/keycloak/resourceprovider/config/OauthResourceConfiguration.java
+@@
+-							  .requestMatchers("/messages/user").denyAll()
++							  .requestMatchers("/messages/user").hasAnyRole("ADMIN", "USER")

@@ -45,7 +45,9 @@ function getUsername () {
 }
 
 function gotoAccount () {
-  return keycloak.accountManagement()
+  if (keycloak.authenticated) {
+    return keycloak.accountManagement()
+  }
 }
 
 function getRoles () {
@@ -59,6 +61,10 @@ function getAccessToken () {
   return keycloak.token
 }
 
+function getTokenParsed () {
+  return keycloak.tokenParsed ?? null
+}
+
 function logout () {
   keycloak.logout()
 }
@@ -69,4 +75,4 @@ function login () {
   )
 }
 
-export { logout, login, gotoAccount, getUsername, getAccessToken, getRoles }
+export { logout, login, gotoAccount, getUsername, getAccessToken, getRoles, getTokenParsed }

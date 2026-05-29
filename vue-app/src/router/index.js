@@ -1,15 +1,15 @@
-import Vue from 'vue'
-import Router from 'vue-router'
-import ResourceProviderUi from '@/components/ResourceProviderUi'
+import { createRouter, createWebHistory } from 'vue-router'
+import ResourceProviderUi from '@/components/ResourceProviderUi.vue'
 
-Vue.use(Router)
+const routes = [
+  {
+    path: '/',
+    name: 'ResourceProviderUi',
+    component: ResourceProviderUi
+  }
+]
 
-export default new Router({
-  routes: [
-    {
-      path: '/',
-      name: 'ResourceProviderUi',
-      component: ResourceProviderUi
-    }
-  ]
+export default createRouter({
+  history: createWebHistory(),
+  routes
 })

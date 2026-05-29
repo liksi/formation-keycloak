@@ -7,20 +7,10 @@ server:
   port: 8090
 
 spring:
-  resources:
-    cache:
-      cachecontrol:
-        no-store: on
-  security:
-    oauth2:
-      client:
-        registration:
-          keycloak:
-            client-id: secret-webapp
-            client-secret: hC0VxkSVOkxzAewulJ2arhfKTYNOWYOQ
-            authorization-grant-type: authorization_code
-            scope: openid
-        provider:
-          keycloak:
-            issuer-uri: https://lemur-5.cloud-iam.com/auth/realms/keycloak-training
-
+  config:
+    import: optional:classpath:application-${authentication-mode}.yml
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-store: true
