@@ -35,9 +35,11 @@ Keycloak training workshop by [Liksi](https://www.liksi.fr) — hands-on lab to 
 ## Prerequisites
 
 - **Docker** and Docker Compose (v2+)
-- **Java 25** (Temurin recommended)
+- **Java 25** (Temurin recommended, for `api` and `secret-webapp`)
 - **Maven 3.9+**
 - **Node.js 22+** and npm
+
+The Keycloak SPI provider module under `keycloak/provider` targets Java 21.
 
 ## Versions
 
@@ -80,6 +82,8 @@ This builds and launches all 9 services:
 | PostgreSQL | localhost:5432 | Keycloak database |
 
 > **Always rebuild**: `docker compose up --build` recompiles all apps from source. Use the `--build` flag every time you change code.
+
+> **Keycloak 26 URL shape**: local realm and admin URLs are exposed directly under `http://localhost:8080/` with no `/auth` prefix.
 
 To stop: `docker compose down`
 
@@ -215,6 +219,10 @@ docker compose build keycloak
 docker compose up -d keycloak
 ```
 
+For iterative provider/theme development with `start-dev`, prefer the official image
+plus mounted volumes. The custom image in this repo keeps `ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start"]`
+so it is optimized for the regular `start` command, not for ad hoc `start-dev` runs.
+
 ## Project Structure
 
 ```
@@ -229,7 +237,7 @@ formation-keycloak/
 │   ├── Dockerfile                # Multi-stage Keycloak with custom providers
 │   ├── docker-compose.yml        # Infra-only stack (for PW3/6 steps)
 │   ├── conf/keycloak.conf        # Keycloak configuration
-│   ├── provider/                 # SPI extensions (Java 25, JUnit 5)
+│   ├── provider/                 # SPI extensions (Java 21, JUnit 5)
 │   │   ├── pom.xml
 │   │   └── src/
 │   │       ├── main/java/...     # Authenticator, RequiredAction, Mapper

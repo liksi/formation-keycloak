@@ -481,8 +481,8 @@ def pw7_keycloak(workspace_manager):
         [
             "docker", "run", "-d", "--name", container,
             "-p", "18080:8080",
-            "-e", "KEYCLOAK_ADMIN=admin",
-            "-e", "KEYCLOAK_ADMIN_PASSWORD=admin",
+            "-e", "KC_BOOTSTRAP_ADMIN_USERNAME=admin",
+            "-e", "KC_BOOTSTRAP_ADMIN_PASSWORD=admin",
             "-v", f"{jar}:/opt/keycloak/providers/registration-spi.jar",
             "-v", f"{theme_dir}/:/opt/keycloak/themes/",
             # Must use the official image: the project's custom keycloak:latest has

@@ -9,7 +9,7 @@
         <div id="kc-form">
             <div id="kc-form-wrapper">
                 <form id="kc-form-login" class="${properties.kcFormClass!}" onsubmit="login.disabled = true; return true;" action="${url.loginAction}" method="post" novalidate="novalidate">
-                    ${question}
+                    ${question!"Secret question not configured"}
                     <@field.input name="answer" label=msg("answer") autocomplete="answer" />
 
                     <@buttons.loginButton />

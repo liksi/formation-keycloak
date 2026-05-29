@@ -1,29 +1,27 @@
 # vue-app
 
 ## Project setup
-```
+
+```bash
 npm install
 ```
 
-### Compiles and hot-reloads for development
-```
-npm run serve
+## Hot-reload for development
+
+```bash
+npm run dev
 ```
 
-### Compiles and minifies for production
-```
+## Production build
+
+```bash
 npm run build
 ```
 
-### Run your tests
-```
+## Tests
+
+```bash
 npm run test
 ```
 
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+This project uses Vite, not Vue CLI.
